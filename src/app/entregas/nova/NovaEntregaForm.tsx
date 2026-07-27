@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
+import { NovoColaboradorDialog } from '@/components/NovoColaboradorDialog'
+import { NovoEpiDialog } from '@/components/NovoEpiDialog'
 import { Loader2, Send, Plus, Trash2 } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import type { Profile, Epi } from '@/types/database'
@@ -33,18 +36,32 @@ const itemVazio = (): ItemForm => ({
   validade_personalizada: false,
 })
 
-export function NovaEntregaForm({ colaboradores, epis }: Props) {
+export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episProp }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
+  // Listas locais — permitem adicionar itens criados via pop-up sem recarregar
+  const [colaboradores, setColaboradores] = useState<Profile[]>(colaboradoresProp)
+  const [epis, setEpis] = useState<Epi[]>(episProp)
+
   const today = format(new Date(), 'yyyy-MM-dd')
   const [colaboradorId, setColaboradorId] = useState('')
   const [dataEntrega, setDataEntrega] = useState(today)
   const [tipo, setTipo] = useState<'entrega' | 'retirada'>('entrega')
   const [itens, setItens] = useState<ItemForm[]>([itemVazio()])
+
+  function handleColaboradorCriado(novo: Profile) {
+    setColaboradores((prev) => [novo, ...prev])
+    setColaboradorId(novo.id)
+  }
+
+  function handleEpiCriado(index: number, novo: Epi) {
+    setEpis((prev) => [novo, ...prev])
+    handleEpiChange(index, novo.id)
+  }
 
   function calcularVencimento(dataEnt: string, validadeDias: number) {
     if (!dataEnt || !validadeDias) return ''
@@ -197,19 +214,22 @@ export function NovaEntregaForm({ colaboradores, epis }: Props) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Colaborador *</Label>
-              <Select value={colaboradorId} onValueChange={setColaboradorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar colaborador..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {colaboradores.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome} {c.setor ? `— ${c.setor}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label>Colaborador *</Label>
+                <NovoColaboradorDialog onCreated={handleColaboradorCriado} />
+              </div>
+              <Combobox
+                value={colaboradorId}
+                onValueChange={setColaboradorId}
+                options={colaboradores.map((c) => ({
+                  value: c.id,
+                  label: c.nome,
+                  sublabel: c.cargo ?? undefined,
+                }))}
+                placeholder="Selecionar colaborador..."
+                searchPlaceholder="Buscar por nome ou cargo..."
+                emptyText="Nenhum colaborador encontrado."
+              />
             </div>
             <div className="space-y-2">
               <Label>Tipo de movimentação *</Label>
@@ -263,19 +283,22 @@ export function NovaEntregaForm({ colaboradores, epis }: Props) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">EPI *</Label>
-                    <Select value={item.epi_id} onValueChange={(v) => handleEpiChange(index, v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar EPI..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {epis.map((epi) => (
-                          <SelectItem key={epi.id} value={epi.id}>
-                            {epi.nome} — CA {epi.ca}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">EPI *</Label>
+                      <NovoEpiDialog onCreated={(novo) => handleEpiCriado(index, novo)} />
+                    </div>
+                    <Combobox
+                      value={item.epi_id}
+                      onValueChange={(v) => handleEpiChange(index, v)}
+                      options={epis.map((epi) => ({
+                        value: epi.id,
+                        label: epi.nome,
+                        sublabel: `CA ${epi.ca}`,
+                      }))}
+                      placeholder="Selecionar EPI..."
+                      searchPlaceholder="Buscar por nome ou CA..."
+                      emptyText="Nenhum EPI encontrado."
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Quantidade *</Label>

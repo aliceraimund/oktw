@@ -11,6 +11,7 @@ create table if not exists profiles (
   role text not null check (role in ('rh', 'gestor', 'colaborador')),
   setor text,
   cargo text,
+  cpf text,
   ctps text,
   ativo boolean default true,
   created_at timestamptz default now()

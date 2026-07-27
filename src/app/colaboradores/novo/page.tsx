@@ -23,6 +23,7 @@ export default function NovoColaboradorPage() {
     role: 'colaborador',
     setor: '',
     cargo: '',
+    cpf: '',
     ctps: '',
   })
 
@@ -96,6 +97,10 @@ export default function NovoColaboradorPage() {
                 <div className="space-y-2">
                   <Label>Cargo</Label>
                   <Input value={form.cargo} onChange={(e) => update('cargo', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>CPF</Label>
+                  <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
                 </div>
                 <div className="space-y-2">
                   <Label>CTPS (nº série / UF)</Label>

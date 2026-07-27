@@ -11,11 +11,11 @@ export async function PATCH(
   const supabase = createAdminClient()
   const body = await req.json()
 
-  const { nome, setor, cargo, ctps, role, ativo } = body
+  const { nome, setor, cargo, cpf, ctps, role, ativo } = body
 
   const { error } = await supabase
     .from('profiles')
-    .update({ nome, setor: setor || null, cargo: cargo || null, ctps: ctps || null, role, ativo })
+    .update({ nome, setor: setor || null, cargo: cargo || null, cpf: cpf || null, ctps: ctps || null, role, ativo })
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

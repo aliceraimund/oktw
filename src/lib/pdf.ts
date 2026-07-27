@@ -47,8 +47,6 @@ export async function gerarFichaEntregaPDFv2(
   assinaturaBase64: string
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
-  const page = doc.addPage([595, 842]) // A4
-  const { width, height } = page.getSize()
 
   const fontBold    = await doc.embedFont(StandardFonts.HelveticaBold)
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica)
@@ -57,8 +55,8 @@ export async function gerarFichaEntregaPDFv2(
   const itens       = ficha.itens ?? []
   const hash        = await sha256(assinaturaBase64)
 
-  const margin = 50
-  let y = height - margin
+  const W = 595, H = 842, margin = 50 // A4
+  const width = W, height = H
 
   // Tipo determina os textos do documento
   const tipoLabel    = ficha.tipo === 'retirada' ? 'RETIRADA' : 'ENTREGA'
@@ -66,13 +64,27 @@ export async function gerarFichaEntregaPDFv2(
     ? 'Ficha de Retirada de EPI — NR-6'
     : 'Ficha de Entrega de EPI — NR-6'
 
-  // ── Cabeçalho ──────────────────────────────────────────────
-  page.drawRectangle({ x: 0, y: height - 80, width, height: 80, color: rgb(0.06, 0.09, 0.16) })
-  page.drawText('OKTW', { x: margin, y: height - 46, size: 24, font: fontBold, color: rgb(1, 1, 1) })
-  page.drawText(tipoSubtitle, {
-    x: margin, y: height - 64, size: 9, font: fontRegular, color: rgb(0.72, 0.84, 1),
-  })
-  y = height - 110
+  // ── Cabeçalho e rodapé reutilizáveis (garantem consistência entre páginas) ──
+  function desenharCabecalho(p: ReturnType<typeof doc.addPage>) {
+    p.drawRectangle({ x: 0, y: H - 80, width: W, height: 80, color: rgb(0.06, 0.09, 0.16) })
+    p.drawText('OKTW', { x: margin, y: H - 46, size: 24, font: fontBold, color: rgb(1, 1, 1) })
+    p.drawText(tipoSubtitle, {
+      x: margin, y: H - 64, size: 9, font: fontRegular, color: rgb(0.72, 0.84, 1),
+    })
+    return H - 110
+  }
+
+  function desenharRodape(p: ReturnType<typeof doc.addPage>) {
+    p.drawLine({ start: { x: margin, y: 55 }, end: { x: W - margin, y: 55 }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) })
+    p.drawText('Hash SHA-256:', { x: margin, y: 42, size: 6, font: fontBold, color: rgb(0.5, 0.5, 0.5) })
+    p.drawText(hash, { x: margin, y: 32, size: 5.5, font: fontRegular, color: rgb(0.5, 0.5, 0.5) })
+    p.drawText('Sistema OKTW EPI Manager — Conforme NR-6 item 6.5.1 / Lei 14.063/2020', {
+      x: margin, y: 20, size: 6.5, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
+    })
+  }
+
+  let page = doc.addPage([W, H])
+  let y = desenharCabecalho(page)
 
   // ── Título ─────────────────────────────────────────────────
   page.drawText(`TERMO DE RESPONSABILIDADE PELA GUARDA E USO DO EPI — ${tipoLabel}`, {
@@ -135,55 +147,64 @@ export async function gerarFichaEntregaPDFv2(
   page.drawText('TERMO DE RESPONSABILIDADE', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 14
 
+  const MIN_ASSINATURA = 150 // altura mínima livre para o bloco de assinatura
+
+  // O Termo pagina quando chega perto do rodapé — nenhuma cláusula é truncada
   for (const paragrafo of TERMO_PARAGRAFOS) {
     const linhas = wrapText(paragrafo, 95)
     for (const linha of linhas) {
-      if (y < 180) break  // reservar espaço para assinatura
+      if (y < 90) {
+        desenharRodape(page)
+        page = doc.addPage([W, H])
+        y = desenharCabecalho(page)
+        y -= 6
+      }
       page.drawText(linha, { x: margin, y, size: 7, font: fontRegular, color: rgb(0.2, 0.2, 0.2) })
       y -= 11
     }
     y -= 4
   }
 
-  y -= 10
+  y -= 8
   page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
-  y -= 20
+  y -= 14
+
+  // Se não couber o bloco de assinatura acima do rodapé, cria nova página
+  if (y < MIN_ASSINATURA) {
+    desenharRodape(page)
+    page = doc.addPage([W, H])
+    y = desenharCabecalho(page)
+    y -= 6
+  }
 
   // ── Assinatura ─────────────────────────────────────────────
   page.drawText('ASSINATURA ELETRÔNICA DO COLABORADOR', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
-  y -= 14
+  y -= 13
 
   page.drawText(
     `Assinado em: ${ficha.assinado_em ? formatDateTimeBR(ficha.assinado_em) : new Date().toLocaleString('pt-BR')}`,
     { x: margin, y, size: 8, font: fontRegular }
   )
-  y -= 14
+  y -= 12
 
   try {
     const base64Data = assinaturaBase64.replace(/^data:image\/\w+;base64,/, '')
     const imgBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
     const img = await doc.embedPng(imgBytes).catch(() => doc.embedJpg(imgBytes))
-    const imgDims = img.scale(0.35)
-    const imgH = Math.min(imgDims.height, 60)
-    const imgW = Math.min(imgDims.width, 180)
-    y -= imgH + 10
+    const imgDims = img.scale(0.3)
+    const imgH = Math.min(imgDims.height, 46)
+    const imgW = Math.min(imgDims.width, 160)
+    y -= imgH + 6
     page.drawImage(img, { x: margin, y, width: imgW, height: imgH })
-    y -= 4
   } catch {
-    y -= 60
+    y -= 46
   }
 
+  y -= 6
   page.drawLine({ start: { x: margin, y }, end: { x: margin + 200, y }, thickness: 1, color: rgb(0, 0, 0) })
   page.drawText(colaborador.nome, { x: margin, y: y - 12, size: 8, font: fontRegular })
 
-  // ── Rodapé ─────────────────────────────────────────────────
-  page.drawLine({ start: { x: margin, y: 55 }, end: { x: width - margin, y: 55 }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) })
-  page.drawText('Hash SHA-256:', { x: margin, y: 42, size: 6, font: fontBold, color: rgb(0.5, 0.5, 0.5) })
-  page.drawText(hash, { x: margin, y: 32, size: 5.5, font: fontRegular, color: rgb(0.5, 0.5, 0.5) })
-  page.drawText('Sistema OKTW EPI Manager — Conforme NR-6 item 6.5.1 / Lei 14.063/2020', {
-    x: margin, y: 20, size: 6.5, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
-  })
-
+  desenharRodape(page)
   return doc.save()
 }
 

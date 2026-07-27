@@ -4,8 +4,18 @@ import { enviarAlertaVencimento } from '@/lib/email'
 import { diasParaVencer } from '@/lib/utils'
 import type { ItemEntrega, AlertaTipo } from '@/types/database'
 
-// Chamado diariamente — via Vercel Cron ou pg_cron
+// Chamado diariamente. O Vercel Cron dispara via GET e injeta o header
+// Authorization: Bearer <CRON_SECRET> automaticamente. POST mantido para
+// chamadas manuais / compatibilidade.
+export async function GET(req: NextRequest) {
+  return processarAlertas(req)
+}
+
 export async function POST(req: NextRequest) {
+  return processarAlertas(req)
+}
+
+async function processarAlertas(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   const secret = process.env.CRON_SECRET
   if (secret && authHeader !== `Bearer ${secret}`) {
