@@ -11,6 +11,12 @@ import type { FichaEntrega } from '@/types/database'
 
 type PageState = 'loading' | 'ready' | 'already_signed' | 'not_found' | 'submitting' | 'success' | 'error'
 
+type GeoState = {
+  lat: number | null
+  lng: number | null
+  status: 'pending' | 'granted' | 'denied' | 'unavailable'
+}
+
 export default function AssinarPage() {
   const { token } = useParams<{ token: string }>()
   const sigRef = useRef<SignatureCanvasHandle>(null)
@@ -19,6 +25,9 @@ export default function AssinarPage() {
   const [ficha, setFicha] = useState<FichaEntrega | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [consentimento, setConsentimento] = useState(false)
+  const [consentimentoEm, setConsentimentoEm] = useState<string | null>(null)
+  const [geo, setGeo] = useState<GeoState>({ lat: null, lng: null, status: 'pending' })
 
   useEffect(() => {
     async function loadFicha() {
@@ -37,9 +46,32 @@ export default function AssinarPage() {
     loadFicha()
   }, [token])
 
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGeo({ lat: null, lng: null, status: 'unavailable' })
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude, status: 'granted' }),
+      () => setGeo({ lat: null, lng: null, status: 'denied' }),
+      { timeout: 8000 }
+    )
+  }, [])
+
+  function handleConsentimento(checked: boolean) {
+    setConsentimento(checked)
+    if (checked && !consentimentoEm) {
+      setConsentimentoEm(new Date().toISOString())
+    }
+  }
+
   async function handleConfirmar() {
     if (!sigRef.current || sigRef.current.isEmpty()) {
       alert('Por favor, assine no campo acima antes de confirmar.')
+      return
+    }
+    if (!consentimento) {
+      alert('É necessário confirmar o consentimento eletrônico antes de assinar.')
       return
     }
     setState('submitting')
@@ -47,7 +79,14 @@ export default function AssinarPage() {
     const res = await fetch(`/api/assinatura/${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assinaturaBase64 }),
+      body: JSON.stringify({
+        assinaturaBase64,
+        geolocalizacaoLat: geo.lat,
+        geolocalizacaoLng: geo.lng,
+        geolocalizacaoStatus: geo.status,
+        consentimentoEletronico: true,
+        consentimentoEm: consentimentoEm ?? new Date().toISOString(),
+      }),
     })
     const json = await res.json()
     if (!res.ok) {
@@ -191,20 +230,38 @@ export default function AssinarPage() {
               </p>
               <p>
                 Recebi da empresa OKTW COMERCIO E SERVICOS LTDA, CNPJ: 51.747.453/0001-17, a título de empréstimo,
-                para meu uso exclusivo e obrigatório nas dependências da empresa, conforme determinado no PGR
-                Programa de Gerenciamento de Risco da Portaria 3214/78 em sua NR-01 os equipamentos discriminados
-                a seguir, comprometendo-me a mantê-los em perfeito estado de uso e conservação, ficando ciente de que:
+                para meu uso exclusivo e obrigatório nas dependências da empresa, conforme determinado na NR-6 item 6.5.1,
+                os equipamentos discriminados a seguir, comprometendo-me a mantê-los em perfeito estado de uso e
+                conservação, ficando ciente de que:
               </p>
-              <p>1- Recebi treinamento quanto à necessidade na utilização dos referidos EPI's, a maneira correta de usá-los, guardá-los e higienizá-los, bem como da minha responsabilidade quanto a seu uso, conforme determinado na Portaria 3214/78 em sua NR-01;</p>
+              <p>1- Recebi treinamento quanto à necessidade na utilização dos referidos EPI's, a maneira correta de usá-los, guardá-los e higienizá-los, bem como da minha responsabilidade quanto a seu uso, conforme determinado na NR-6 item 6.5.1;</p>
               <p>2- Se o equipamento foi danificado ou inutilizado por emprego inadequado, mau uso, negligência ou extravio, a empresa me fornecerá novo equipamento e cobrará o valor de um equipamento da mesma marca ou equivalente (Art. 462 em seu parágrafo 1º da C.L.T.);</p>
               <p>3- Fico proibido de dar ou emprestar o equipamento que estiver sob a minha responsabilidade, só podendo fazê-lo se receber ordem por escrito de pessoas autorizadas para tal fim;</p>
               <p>4- Em caso de dano, inutilização ou extravio do equipamento, deverei comunicar imediatamente ao setor competente;</p>
               <p>5- Terminados os serviços, ou no caso de rescisão do contrato de trabalho, devolverei o equipamento completo e em perfeito estado de conservação, considerando-se o tempo de uso do mesmo, ao setor competente;</p>
               <p>6- Estando os equipamentos em minha posse, estarei sujeito a inspeções sem prévio aviso.</p>
-              <p>7- Fico ciente de que pela não utilização do equipamento de proteção individual em serviço, estarei sujeito às sanções disciplinares cabíveis, que irão desde a simples advertência até a dispensa por justa causa, nos termos do Art. 482 letra "h" da C.L.T., combinado com a Portaria 3214/78 em suas NR-01 e NR-06.</p>
+              <p>7- Fico ciente de que pela não utilização do equipamento de proteção individual em serviço, estarei sujeito às sanções disciplinares cabíveis, que irão desde a simples advertência até a dispensa por justa causa, nos termos do Art. 482 letra "h" da C.L.T., conforme NR-6 item 6.5.1.</p>
+              <p>8- Declaro expressamente que consinto com a assinatura eletrônica do presente termo, nos termos da Lei nº 14.063/2020 e conforme NR-6 item 6.5.1, tendo plena ciência de que esta assinatura possui validade legal equivalente à assinatura manuscrita.</p>
             </div>
           </CardContent>
         </Card>
+
+        {/* Consentimento eletrônico — obrigatório */}
+        <div className={`p-4 rounded-lg border-2 transition-colors ${consentimento ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-slate-50'}`}>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded accent-slate-900"
+              checked={consentimento}
+              onChange={(e) => handleConsentimento(e.target.checked)}
+            />
+            <span className="text-xs text-slate-700 leading-relaxed">
+              Li e compreendi o Termo de Responsabilidade acima, e <strong>consinto expressamente</strong> com a
+              utilização de assinatura eletrônica, com força probatória nos termos da{' '}
+              <strong>Lei nº 14.063/2020</strong> e conforme <strong>NR-6 item 6.5.1</strong>.
+            </span>
+          </label>
+        </div>
 
         {/* Assinatura */}
         <Card>
@@ -225,7 +282,7 @@ export default function AssinarPage() {
         <Button
           className="w-full h-12 text-base"
           onClick={handleConfirmar}
-          disabled={state === 'submitting'}
+          disabled={state === 'submitting' || !consentimento}
         >
           {state === 'submitting' ? (
             <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando assinatura...</>
@@ -234,8 +291,14 @@ export default function AssinarPage() {
           )}
         </Button>
 
+        {!consentimento && (
+          <p className="text-xs text-center text-amber-600">
+            Marque o consentimento acima para habilitar a assinatura.
+          </p>
+        )}
+
         <p className="text-xs text-center text-muted-foreground pb-6">
-          Este documento tem valor probatório conforme a NR-6 e legislação trabalhista.
+          Este documento tem valor probatório conforme a NR-6 item 6.5.1 e Lei nº 14.063/2020.
         </p>
       </div>
     </div>

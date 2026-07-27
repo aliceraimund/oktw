@@ -1,5 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
-import type { FichaEntrega } from '@/types/database'
+import type { FichaEntrega, Profile } from '@/types/database'
 import { formatDateBR, formatDateTimeBR } from './utils'
 
 async function sha256(data: string): Promise<string> {
@@ -15,14 +15,15 @@ async function sha256(data: string): Promise<string> {
 // ─── Ficha com múltiplos EPIs + Termo de Responsabilidade ────────────────────
 
 const TERMO_PARAGRAFOS = [
-  'Recebi da empresa OKTW COMERCIO E SERVICOS LTDA, CNPJ: 51.747.453/0001-17, a título de empréstimo, para meu uso exclusivo e obrigatório nas dependências da empresa, conforme determinado no PGR Programa de Gerenciamento de Risco da Portaria 3214/78 em sua NR-01 os equipamentos discriminados a seguir, comprometendo-me a mantê-los em perfeito estado de uso e conservação, ficando ciente de que:',
-  '1- Recebi treinamento quanto à necessidade na utilização dos referidos EPI\'s, a maneira correta de usá-los, guardá-los e higienizá-los, bem como da minha responsabilidade quanto a seu uso, conforme determinado na Portaria 3214/78 em sua NR-01;',
+  'Recebi da empresa OKTW COMERCIO E SERVICOS LTDA, CNPJ: 51.747.453/0001-17, a título de empréstimo, para meu uso exclusivo e obrigatório nas dependências da empresa, conforme determinado na NR-6 item 6.5.1, os equipamentos discriminados a seguir, comprometendo-me a mantê-los em perfeito estado de uso e conservação, ficando ciente de que:',
+  '1- Recebi treinamento quanto à necessidade na utilização dos referidos EPI\'s, a maneira correta de usá-los, guardá-los e higienizá-los, bem como da minha responsabilidade quanto a seu uso, conforme determinado na NR-6 item 6.5.1;',
   '2- Se o equipamento foi danificado ou inutilizado por emprego inadequado, mau uso, negligência ou extravio, a empresa me fornecerá novo equipamento e cobrará o valor de um equipamento da mesma marca ou equivalente (Art. 462 em seu parágrafo 1º da C.L.T.);',
   '3- Fico proibido de dar ou emprestar o equipamento que estiver sob a minha responsabilidade, só podendo fazê-lo se receber ordem por escrito de pessoas autorizadas para tal fim;',
   '4- Em caso de dano, inutilização ou extravio do equipamento, deverei comunicar imediatamente ao setor competente;',
   '5- Terminados os serviços, ou no caso de rescisão do contrato de trabalho, devolverei o equipamento completo e em perfeito estado de conservação, considerando-se o tempo de uso do mesmo, ao setor competente;',
   '6- Estando os equipamentos em minha posse, estarei sujeito a inspeções sem prévio aviso.',
-  '7- Fico ciente de que pela não utilização do equipamento de proteção individual em serviço, estarei sujeito às sanções disciplinares cabíveis, que irão desde a simples advertência até a dispensa por justa causa, nos termos do Art. 482 letra "h" da C.L.T., combinado com a Portaria 3214/78 em suas NR-01 e NR-06.',
+  '7- Fico ciente de que pela não utilização do equipamento de proteção individual em serviço, estarei sujeito às sanções disciplinares cabíveis, que irão desde a simples advertência até a dispensa por justa causa, nos termos do Art. 482 letra "h" da C.L.T., conforme NR-6 item 6.5.1.',
+  '8- Declaro expressamente que consinto com a assinatura eletrônica do presente termo, nos termos da Lei nº 14.063/2020 e conforme NR-6 item 6.5.1, tendo plena ciência de que esta assinatura possui validade legal equivalente à assinatura manuscrita.',
 ]
 
 function wrapText(text: string, maxChars: number): string[] {
@@ -85,6 +86,7 @@ export async function gerarFichaEntregaPDFv2(
 
   for (const [label, valor] of [
     ['Nome', colaborador.nome],
+    ['CPF', colaborador.cpf ?? '—'],
     ['Cargo', colaborador.cargo ?? '—'],
     ['Setor', colaborador.setor ?? '—'],
     ['CTPS', colaborador.ctps ?? '—'],
@@ -104,19 +106,22 @@ export async function gerarFichaEntregaPDFv2(
   page.drawText('EQUIPAMENTOS RECEBIDOS', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 14
 
-  // Cabeçalho da tabela
-  const cols = { epi: margin, ca: margin + 200, qtd: margin + 300, venc: margin + 360 }
+  // Cabeçalho da tabela (5 colunas: nome | CA | Val.CA | Qtd | Vencimento)
+  const cols = { epi: margin, ca: margin + 170, valca: margin + 250, qtd: margin + 335, venc: margin + 370 }
   page.drawRectangle({ x: margin - 4, y: y - 4, width: width - margin * 2 + 8, height: 16, color: rgb(0.95, 0.95, 0.95) })
-  page.drawText('Equipamento', { x: cols.epi, y, size: 7, font: fontBold })
-  page.drawText('CA', { x: cols.ca, y, size: 7, font: fontBold })
-  page.drawText('Qtd', { x: cols.qtd, y, size: 7, font: fontBold })
-  page.drawText('Vencimento', { x: cols.venc, y, size: 7, font: fontBold })
+  page.drawText('Equipamento',  { x: cols.epi,   y, size: 7, font: fontBold })
+  page.drawText('CA',           { x: cols.ca,    y, size: 7, font: fontBold })
+  page.drawText('Val. CA',      { x: cols.valca, y, size: 7, font: fontBold })
+  page.drawText('Qtd',          { x: cols.qtd,   y, size: 7, font: fontBold })
+  page.drawText('Vencimento',   { x: cols.venc,  y, size: 7, font: fontBold })
   y -= 18
 
   for (const item of itens) {
-    const nome = (item.epi?.nome ?? '').substring(0, 35)
+    const nome = (item.epi?.nome ?? '').substring(0, 30)
+    const validadeCa = item.epi?.validade_ca ? formatDateBR(item.epi.validade_ca) : '—'
     page.drawText(nome, { x: cols.epi, y, size: 8, font: fontRegular })
     page.drawText(item.epi?.ca ?? '', { x: cols.ca, y, size: 8, font: fontRegular })
+    page.drawText(validadeCa, { x: cols.valca, y, size: 8, font: fontRegular })
     page.drawText(String(item.quantidade), { x: cols.qtd, y, size: 8, font: fontRegular })
     page.drawText(formatDateBR(item.data_vencimento), { x: cols.venc, y, size: 8, font: fontRegular })
     y -= 14
@@ -175,9 +180,164 @@ export async function gerarFichaEntregaPDFv2(
   page.drawLine({ start: { x: margin, y: 55 }, end: { x: width - margin, y: 55 }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) })
   page.drawText('Hash SHA-256:', { x: margin, y: 42, size: 6, font: fontBold, color: rgb(0.5, 0.5, 0.5) })
   page.drawText(hash, { x: margin, y: 32, size: 5.5, font: fontRegular, color: rgb(0.5, 0.5, 0.5) })
-  page.drawText('Sistema OKTW EPI Manager — Conforme NR-6 / Portaria 3214/78', {
+  page.drawText('Sistema OKTW EPI Manager — Conforme NR-6 item 6.5.1 / Lei 14.063/2020', {
     x: margin, y: 20, size: 6.5, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
   })
 
+  return doc.save()
+}
+
+// ─── Relatório cumulativo por colaborador ─────────────────────────────────────
+
+export async function gerarRelatorioColaboradorPDF(
+  colaborador: Profile,
+  fichas: FichaEntrega[]
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  const fontBold    = await doc.embedFont(StandardFonts.HelveticaBold)
+  const fontRegular = await doc.embedFont(StandardFonts.Helvetica)
+
+  const W = 595, H = 842, margin = 50
+
+  function novaPage() {
+    const p = doc.addPage([W, H])
+    p.drawRectangle({ x: 0, y: H - 80, width: W, height: 80, color: rgb(0.06, 0.09, 0.16) })
+    p.drawText('OKTW', { x: margin, y: H - 46, size: 24, font: fontBold, color: rgb(1, 1, 1) })
+    p.drawText('Relatório Histórico de EPIs — NR-6', {
+      x: margin, y: H - 64, size: 9, font: fontRegular, color: rgb(0.72, 0.84, 1),
+    })
+    return p
+  }
+
+  function drawFooter(p: ReturnType<typeof doc.addPage>) {
+    p.drawLine({ start: { x: margin, y: 55 }, end: { x: W - margin, y: 55 }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) })
+    p.drawText('Sistema OKTW EPI Manager — Conforme NR-6 item 6.5.1 / Lei 14.063/2020', {
+      x: margin, y: 40, size: 6.5, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
+    })
+    p.drawText(`Gerado em ${new Date().toLocaleString('pt-BR')}`, {
+      x: margin, y: 28, size: 6, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
+    })
+  }
+
+  let page = novaPage()
+  let y = H - 110
+
+  // Título
+  page.drawText('HISTÓRICO DE ENTREGAS DE EPI', {
+    x: margin, y, size: 11, font: fontBold, color: rgb(0.06, 0.09, 0.16),
+  })
+  y -= 6
+  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 1, color: rgb(0.06, 0.09, 0.16) })
+  y -= 20
+
+  // Dados do colaborador
+  page.drawText('COLABORADOR', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  y -= 16
+
+  for (const [label, valor] of [
+    ['Nome',  colaborador.nome],
+    ['CPF',   colaborador.cpf  ?? '—'],
+    ['CTPS',  colaborador.ctps ?? '—'],
+    ['Cargo', colaborador.cargo ?? '—'],
+    ['Setor', colaborador.setor ?? '—'],
+  ] as [string, string][]) {
+    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold })
+    page.drawText(valor,       { x: margin + 80, y, size: 8, font: fontRegular })
+    y -= 13
+  }
+
+  y -= 10
+  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
+  y -= 16
+
+  // Resumo
+  const assinadas = fichas.filter((f) => f.assinado).length
+  page.drawText('RESUMO', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  y -= 16
+
+  for (const [label, valor] of [
+    ['Total de fichas', String(fichas.length)],
+    ['Assinadas',       String(assinadas)],
+    ['Pendentes',       String(fichas.length - assinadas)],
+  ] as [string, string][]) {
+    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold })
+    page.drawText(valor,       { x: margin + 110, y, size: 8, font: fontRegular })
+    y -= 13
+  }
+
+  if (fichas.length === 0) {
+    y -= 16
+    page.drawText('Nenhuma ficha registrada para este colaborador.', {
+      x: margin, y, size: 9, font: fontRegular, color: rgb(0.5, 0.5, 0.5),
+    })
+    drawFooter(page)
+    return doc.save()
+  }
+
+  y -= 10
+  page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
+  y -= 16
+
+  page.drawText('FICHAS DE ENTREGA', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  y -= 16
+
+  const cols = { nome: margin + 10, ca: margin + 215, qtd: margin + 310, venc: margin + 368 }
+
+  for (const ficha of fichas) {
+    const nItems = ficha.itens?.length ?? 0
+    const needed = 20 + (ficha.assinado_em ? 12 : 0) + 14 + nItems * 14 + 16
+
+    if (y - needed < 70) {
+      drawFooter(page)
+      page = novaPage()
+      y = H - 110
+    }
+
+    // Barra de cabeçalho da ficha
+    const tipoLabel = ficha.tipo === 'retirada' ? 'RETIRADA' : 'ENTREGA'
+    page.drawRectangle({
+      x: margin - 4, y: y - 4, width: W - margin * 2 + 8, height: 18,
+      color: rgb(0.93, 0.95, 0.98),
+    })
+    page.drawText(`${formatDateBR(ficha.data_entrega)}  ·  ${tipoLabel}`, {
+      x: margin, y, size: 8, font: fontBold, color: rgb(0.06, 0.09, 0.16),
+    })
+    page.drawText(ficha.assinado ? 'ASSINADO' : 'PENDENTE', {
+      x: W - margin - 55, y, size: 7, font: fontBold,
+      color: ficha.assinado ? rgb(0.1, 0.55, 0.1) : rgb(0.75, 0.4, 0),
+    })
+    y -= 18
+
+    if (ficha.assinado_em) {
+      page.drawText(`Assinado em: ${formatDateTimeBR(ficha.assinado_em)}`, {
+        x: margin + 10, y, size: 7, font: fontRegular, color: rgb(0.5, 0.5, 0.5),
+      })
+      y -= 12
+    }
+
+    // Cabeçalho da tabela de EPIs
+    page.drawText('Equipamento', { x: cols.nome, y, size: 7, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+    page.drawText('CA',          { x: cols.ca,   y, size: 7, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+    page.drawText('Qtd',         { x: cols.qtd,  y, size: 7, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+    page.drawText('Vencimento',  { x: cols.venc, y, size: 7, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+    y -= 14
+
+    for (const item of (ficha.itens ?? [])) {
+      page.drawText((item.epi?.nome ?? '').substring(0, 38), { x: cols.nome, y, size: 7.5, font: fontRegular })
+      page.drawText(item.epi?.ca ?? '',                      { x: cols.ca,   y, size: 7.5, font: fontRegular })
+      page.drawText(String(item.quantidade),                 { x: cols.qtd,  y, size: 7.5, font: fontRegular })
+      page.drawText(formatDateBR(item.data_vencimento),      { x: cols.venc, y, size: 7.5, font: fontRegular })
+      y -= 14
+    }
+
+    y -= 4
+    page.drawLine({
+      start: { x: margin, y }, end: { x: W - margin, y },
+      thickness: 0.3, color: rgb(0.88, 0.88, 0.88),
+    })
+    y -= 12
+  }
+
+  drawFooter(page)
   return doc.save()
 }

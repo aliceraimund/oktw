@@ -51,21 +51,37 @@ export async function POST(
   }
 
   const body = await req.json()
-  const { assinaturaBase64 } = body
+  const {
+    assinaturaBase64,
+    geolocalizacaoLat,
+    geolocalizacaoLng,
+    geolocalizacaoStatus,
+    consentimentoEletronico,
+    consentimentoEm,
+  } = body
 
   if (!assinaturaBase64 || typeof assinaturaBase64 !== 'string') {
     return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 400 })
   }
 
+  if (!consentimentoEletronico) {
+    return NextResponse.json({ error: 'Consentimento eletrônico obrigatório.' }, { status: 400 })
+  }
+
   const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
   const userAgent = req.headers.get('user-agent') || 'unknown'
 
-  // 1. Salvar assinatura na tabela de auditoria
+  // 1. Salvar assinatura na tabela de auditoria (metadados para validade legal — NR-6 6.5.1)
   const { error: sigError } = await supabase.from('assinaturas').insert([{
     ficha_id: ficha.id,
     assinatura_base64: assinaturaBase64,
     ip_address: ip,
     user_agent: userAgent,
+    geolocalizacao_lat: geolocalizacaoLat ?? null,
+    geolocalizacao_lng: geolocalizacaoLng ?? null,
+    geolocalizacao_status: geolocalizacaoStatus ?? 'unavailable',
+    consentimento_eletronico: true,
+    consentimento_em: consentimentoEm ?? new Date().toISOString(),
   }])
 
   if (sigError) {

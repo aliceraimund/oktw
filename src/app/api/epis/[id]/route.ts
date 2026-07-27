@@ -11,11 +11,11 @@ export async function PATCH(
   const supabase = createAdminClient()
   const body = await req.json()
 
-  const { nome, ca, validade_dias, ativo } = body
+  const { nome, ca, validade_dias, validade_ca, ativo } = body
 
   const { error } = await supabase
     .from('epis')
-    .update({ nome, ca, validade_dias, ativo })
+    .update({ nome, ca, validade_dias, validade_ca: validade_ca || null, ativo })
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

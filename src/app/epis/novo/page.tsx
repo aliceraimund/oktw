@@ -19,6 +19,7 @@ export default function NovoEpiPage() {
     nome: '',
     ca: '',
     validade_dias: 365,
+    validade_ca: '',
   })
 
   function update(field: string, value: string | number) {
@@ -30,7 +31,10 @@ export default function NovoEpiPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.from('epis').insert([form])
+    const { error } = await supabase.from('epis').insert([{
+      ...form,
+      validade_ca: form.validade_ca || null,
+    }])
 
     if (error) {
       setError(error.message)
@@ -60,6 +64,11 @@ export default function NovoEpiPage() {
                 <div className="space-y-2">
                   <Label>Número CA (Certificado de Aprovação) *</Label>
                   <Input value={form.ca} onChange={(e) => update('ca', e.target.value)} required placeholder="Ex: 12345" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Validade do CA (data)</Label>
+                  <Input type="date" value={form.validade_ca}
+                    onChange={(e) => update('validade_ca', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Validade padrão (dias) *</Label>

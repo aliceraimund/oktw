@@ -9,6 +9,7 @@ export interface Profile {
   role: Role
   setor: string | null
   cargo: string | null
+  cpf: string | null
   ctps: string | null
   ativo: boolean
   created_at: string
@@ -19,7 +20,7 @@ export interface Epi {
   nome: string
   ca: string
   validade_dias: number
-
+  validade_ca: string | null
   ativo: boolean
   created_at: string
 }
@@ -62,6 +63,26 @@ export interface Assinatura {
   ip_address: string | null
   user_agent: string | null
   signed_at: string
+  geolocalizacao_lat: number | null
+  geolocalizacao_lng: number | null
+  geolocalizacao_status: string | null
+  consentimento_eletronico: boolean
+  consentimento_em: string | null
+}
+
+export interface OperacaoEpi {
+  id: string
+  ficha_id: string
+  epi_id: string
+  colaborador_id: string
+  tipo: 'devolucao' | 'substituicao' | 'higienizacao'
+  data_operacao: string
+  observacao: string | null
+  registrado_por: string | null
+  created_at: string
+  // joins
+  epi?: Epi
+  ficha?: FichaEntrega
 }
 
 export interface Alerta {

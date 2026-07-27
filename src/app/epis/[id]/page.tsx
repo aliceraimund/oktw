@@ -30,6 +30,7 @@ export default function EditarEpiPage() {
     nome: '',
     ca: '',
     validade_dias: 365,
+    validade_ca: '',
     ativo: true,
   })
 
@@ -41,6 +42,7 @@ export default function EditarEpiPage() {
           nome: epi.nome,
           ca: epi.ca,
           validade_dias: epi.validade_dias,
+          validade_ca: epi.validade_ca ?? '',
           ativo: epi.ativo ?? true,
         })
       }
@@ -114,6 +116,11 @@ export default function EditarEpiPage() {
                 <div className="space-y-2">
                   <Label>Número CA *</Label>
                   <Input value={form.ca} onChange={(e) => update('ca', e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Validade do CA (data)</Label>
+                  <Input type="date" value={form.validade_ca}
+                    onChange={(e) => update('validade_ca', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Validade padrão (dias) *</Label>
