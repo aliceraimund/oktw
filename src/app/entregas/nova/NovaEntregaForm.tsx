@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Combobox } from '@/components/ui/combobox'
 import { NovoColaboradorDialog } from '@/components/NovoColaboradorDialog'
 import { NovoEpiDialog } from '@/components/NovoEpiDialog'
+import { EnviarAssinatura } from '@/components/EnviarAssinatura'
 import { Loader2, Send, Plus, Trash2 } from 'lucide-react'
 import { addDays, format } from 'date-fns'
-import type { Profile, Epi } from '@/types/database'
+import type { Profile, Epi, FichaEntrega } from '@/types/database'
 
 interface ItemForm {
   epi_id: string
@@ -42,6 +43,7 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [fichaCriada, setFichaCriada] = useState<FichaEntrega | null>(null)
 
   // Listas locais — permitem adicionar itens criados via pop-up sem recarregar
   const [colaboradores, setColaboradores] = useState<Profile[]>(colaboradoresProp)
@@ -166,32 +168,49 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
       return
     }
 
-    // 3. Enviar e-mail com link de assinatura
-    await fetch('/api/email/assinatura-pendente', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fichaId: ficha.id }),
-    })
+    // 3. Guardar a ficha criada (com o colaborador) para a escolha de canal de envio
+    const colaborador = colaboradores.find((c) => c.id === colaboradorId)
+    setFichaCriada({ ...(ficha as FichaEntrega), colaborador })
 
     setSuccess(true)
     setLoading(false)
   }
 
   if (success) {
+    const semContato = fichaCriada && !fichaCriada.colaborador?.email && !fichaCriada.colaborador?.telefone
     return (
       <Card>
-        <CardContent className="p-8 text-center space-y-4">
+        <CardContent className="p-8 text-center space-y-5">
           <div className="rounded-full bg-green-100 w-16 h-16 flex items-center justify-center mx-auto">
             <Send className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-lg font-semibold">Ficha registrada!</h2>
-          <p className="text-muted-foreground text-sm">
-            O colaborador receberá um link para assinar eletronicamente todos os EPIs de uma vez.
-          </p>
-          <div className="flex gap-3 justify-center pt-2">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Ficha registrada!</h2>
+            <p className="text-muted-foreground text-sm">
+              Agora escolha por qual canal enviar o link de assinatura para{' '}
+              <strong>{fichaCriada?.colaborador?.nome ?? 'o colaborador'}</strong>.
+            </p>
+          </div>
+
+          {fichaCriada && (
+            <div className="flex flex-col items-center gap-2">
+              <EnviarAssinatura ficha={fichaCriada} size="default" />
+              {semContato && (
+                <p className="text-xs text-amber-600">
+                  Este colaborador não tem e-mail nem telefone cadastrado. Adicione um contato no perfil dele para poder enviar.
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground max-w-sm">
+                No WhatsApp, o app abre com a mensagem pronta — basta você tocar em enviar. O link também fica disponível na tela de Entregas e no Dashboard.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3 justify-center pt-2 border-t mt-2">
             <Button onClick={() => router.push('/entregas')}>Ver entregas</Button>
             <Button variant="outline" onClick={() => {
               setSuccess(false)
+              setFichaCriada(null)
               setColaboradorId('')
               setDataEntrega(today)
               setItens([itemVazio()])

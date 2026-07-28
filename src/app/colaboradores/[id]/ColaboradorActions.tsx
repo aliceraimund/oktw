@@ -39,6 +39,7 @@ export function ColaboradorActions({ colaborador }: Props) {
     cargo: colaborador.cargo ?? '',
     cpf: colaborador.cpf ?? '',
     ctps: colaborador.ctps ?? '',
+    telefone: colaborador.telefone ?? '',
     role: colaborador.role,
     ativo: colaborador.ativo ?? true,
   })
@@ -127,6 +128,10 @@ export function ColaboradorActions({ colaborador }: Props) {
                 <p className="font-medium">{colaborador.email}</p>
               </div>
               <div>
+                <p className="text-muted-foreground">WhatsApp / Telefone</p>
+                <p className="font-medium">{colaborador.telefone ?? '—'}</p>
+              </div>
+              <div>
                 <p className="text-muted-foreground">Setor</p>
                 <p className="font-medium">{colaborador.setor ?? '—'}</p>
               </div>
@@ -172,6 +177,10 @@ export function ColaboradorActions({ colaborador }: Props) {
                 <div className="space-y-2">
                   <Label>CPF</Label>
                   <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
+                </div>
+                <div className="space-y-2">
+                  <Label>WhatsApp / Telefone</Label>
+                  <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)} placeholder="Ex: (11) 99999-9999" />
                 </div>
                 <div className="space-y-2">
                   <Label>CTPS (nº série / UF)</Label>

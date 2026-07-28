@@ -25,6 +25,7 @@ export default function NovoColaboradorPage() {
     cargo: '',
     cpf: '',
     ctps: '',
+    telefone: '',
   })
 
   function update(field: string, value: string) {
@@ -101,6 +102,10 @@ export default function NovoColaboradorPage() {
                 <div className="space-y-2">
                   <Label>CPF</Label>
                   <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
+                </div>
+                <div className="space-y-2">
+                  <Label>WhatsApp / Telefone</Label>
+                  <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)} placeholder="Ex: (11) 99999-9999" />
                 </div>
                 <div className="space-y-2">
                   <Label>CTPS (nº série / UF)</Label>

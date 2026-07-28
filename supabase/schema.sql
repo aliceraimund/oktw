@@ -13,6 +13,7 @@ create table if not exists profiles (
   cargo text,
   cpf text,
   ctps text,
+  telefone text,
   ativo boolean default true,
   created_at timestamptz default now()
 );

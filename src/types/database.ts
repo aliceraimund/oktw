@@ -11,6 +11,7 @@ export interface Profile {
   cargo: string | null
   cpf: string | null
   ctps: string | null
+  telefone: string | null
   ativo: boolean
   created_at: string
 }

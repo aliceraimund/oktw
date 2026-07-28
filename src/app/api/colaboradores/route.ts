@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 })
   }
 
-  const { nome, email, senha, role, setor, cargo, cpf, ctps } = await req.json()
+  const { nome, email, senha, role, setor, cargo, cpf, ctps, telefone } = await req.json()
 
   const admin = createAdminClient()
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   // Atualizar perfil com dados adicionais
   const { error: profileError } = await admin
     .from('profiles')
-    .update({ nome, role, setor: setor || null, cargo: cargo || null, cpf: cpf || null, ctps: ctps || null })
+    .update({ nome, role, setor: setor || null, cargo: cargo || null, cpf: cpf || null, ctps: ctps || null, telefone: telefone || null })
     .eq('id', newUser.user.id)
 
   if (profileError) {

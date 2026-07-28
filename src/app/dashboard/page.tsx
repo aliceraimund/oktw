@@ -2,10 +2,12 @@ import { createAdminClient } from '@/lib/supabase-server'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EpiStatusBadge } from '@/components/EpiStatusBadge'
+import { EnviarAssinatura } from '@/components/EnviarAssinatura'
+import { LembreteVencimentoWhatsApp } from '@/components/LembreteVencimentoWhatsApp'
 import { diasParaVencer, formatDateBR } from '@/lib/utils'
-import { Users, HardHat, AlertTriangle, Clock } from 'lucide-react'
+import { Users, HardHat, AlertTriangle, Clock, FileSignature } from 'lucide-react'
 import Link from 'next/link'
-import type { ItemEntrega } from '@/types/database'
+import type { ItemEntrega, FichaEntrega } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +18,7 @@ export default async function DashboardPage() {
     { count: totalColaboradores },
     { count: totalEpis },
     { data: itens },
+    { data: pendentes },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('epis').select('*', { count: 'exact', head: true }).eq('ativo', true),
@@ -23,7 +26,14 @@ export default async function DashboardPage() {
       .from('itens_entrega')
       .select('*, epi:epis(*), ficha:fichas_entrega(*, colaborador:profiles!fichas_entrega_colaborador_id_fkey(*))')
       .order('data_vencimento', { ascending: true }),
+    supabase
+      .from('fichas_entrega')
+      .select('*, colaborador:profiles!fichas_entrega_colaborador_id_fkey(*), itens:itens_entrega(*, epi:epis(*))')
+      .eq('assinado', false)
+      .order('created_at', { ascending: false }),
   ])
+
+  const fichasPendentes = (pendentes as FichaEntrega[]) ?? []
 
   const itensAssinados = ((itens as ItemEntrega[]) || []).filter((i) => i.ficha?.assinado)
 
@@ -36,7 +46,7 @@ export default async function DashboardPage() {
 
   const stats = [
     { label: 'Colaboradores ativos', value: totalColaboradores ?? 0, icon: Users,          color: 'text-blue-600 bg-blue-50' },
-    { label: 'Tipos de EPI',         value: totalEpis ?? 0,          icon: HardHat,        color: 'text-amber-600 bg-amber-50' },
+    { label: 'Assinaturas pendentes', value: fichasPendentes.length,  icon: FileSignature,  color: 'text-violet-600 bg-violet-50' },
     { label: 'EPIs vencidos',        value: vencidos.length,          icon: AlertTriangle,  color: 'text-red-600 bg-red-50' },
     { label: 'Vencem em 30 dias',    value: atencao.length,           icon: Clock,          color: 'text-orange-600 bg-orange-50' },
   ]
@@ -61,6 +71,54 @@ export default async function DashboardPage() {
             </Card>
           ))}
         </div>
+
+        {/* Assinaturas pendentes — lembrete + atalhos de reenvio */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileSignature className="h-4 w-4 text-violet-600" />
+              Assinaturas pendentes
+              {fichasPendentes.length > 0 && (
+                <span className="text-xs font-normal bg-violet-100 text-violet-700 rounded-full px-2 py-0.5">
+                  {fichasPendentes.length}
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {fichasPendentes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhuma assinatura pendente ✓
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {fichasPendentes.map((ficha) => (
+                  <div
+                    key={ficha.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">
+                        <Link href={`/colaboradores/${ficha.colaborador_id}`} className="hover:underline">
+                          {ficha.colaborador?.nome}
+                        </Link>
+                        <span className="text-xs text-muted-foreground font-normal ml-2">
+                          {formatDateBR(ficha.data_entrega)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {ficha.itens?.map((i) => i.epi?.nome).filter(Boolean).join(', ') || 'Sem itens'}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <EnviarAssinatura ficha={ficha} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Alertas */}
         <Card>
@@ -87,6 +145,14 @@ export default async function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">{formatDateBR(item.data_vencimento)}</span>
                       <EpiStatusBadge dataVencimento={item.data_vencimento} />
+                      {diasParaVencer(item.data_vencimento) < 0 && (
+                        <LembreteVencimentoWhatsApp
+                          colaborador={item.ficha?.colaborador}
+                          epi={item.epi}
+                          dataVencimento={item.data_vencimento}
+                          size="icon"
+                        />
+                      )}
                     </div>
                   </div>
                 ))}

@@ -3,6 +3,7 @@ import { Header } from '@/components/layout/Header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EpiStatusBadge } from '@/components/EpiStatusBadge'
+import { LembreteVencimentoWhatsApp } from '@/components/LembreteVencimentoWhatsApp'
 import { formatDateBR, diasParaVencer } from '@/lib/utils'
 import type { ItemEntrega } from '@/types/database'
 import Link from 'next/link'
@@ -57,6 +58,7 @@ export default async function VencimentosPage() {
                   <TableHead>Data entrega</TableHead>
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -76,6 +78,15 @@ export default async function VencimentosPage() {
                     <TableCell>{formatDateBR(item.data_vencimento)}</TableCell>
                     <TableCell>
                       <EpiStatusBadge dataVencimento={item.data_vencimento} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {diasParaVencer(item.data_vencimento) < 0 && (
+                        <LembreteVencimentoWhatsApp
+                          colaborador={item.ficha?.colaborador}
+                          epi={item.epi}
+                          dataVencimento={item.data_vencimento}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

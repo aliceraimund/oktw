@@ -24,6 +24,7 @@ const formVazio = {
   cargo: '',
   cpf: '',
   ctps: '',
+  telefone: '',
 }
 
 export function NovoColaboradorDialog({ onCreated }: Props) {
@@ -62,6 +63,7 @@ export function NovoColaboradorDialog({ onCreated }: Props) {
       cargo: form.cargo || null,
       cpf: form.cpf || null,
       ctps: form.ctps || null,
+      telefone: form.telefone || null,
       ativo: true,
       created_at: new Date().toISOString(),
     }
@@ -125,6 +127,10 @@ export function NovoColaboradorDialog({ onCreated }: Props) {
               <div className="space-y-1.5">
                 <Label>CPF</Label>
                 <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>WhatsApp / Telefone</Label>
+                <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)} placeholder="Ex: (11) 99999-9999" />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label>CTPS (nº série / UF)</Label>

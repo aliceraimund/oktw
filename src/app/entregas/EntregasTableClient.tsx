@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Trash2, Loader2, FileText, ChevronRight } from 'lucide-react'
+import { EnviarAssinatura } from '@/components/EnviarAssinatura'
 import { formatDateBR } from '@/lib/utils'
 import type { FichaEntrega } from '@/types/database'
 
@@ -63,7 +64,7 @@ export function EntregasTableClient({ fichas }: { fichas: FichaEntrega[] }) {
             <TableHead>EPIs</TableHead>
             <TableHead>Assinatura</TableHead>
             <TableHead>PDF</TableHead>
-            <TableHead className="w-24 text-right">Ações</TableHead>
+            <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -104,6 +105,7 @@ export function EntregasTableClient({ fichas }: { fichas: FichaEntrega[] }) {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
+                  {!ficha.assinado && <EnviarAssinatura ficha={ficha} compact />}
                   <Button variant="ghost" size="icon" asChild>
                     <Link href={`/colaboradores/${ficha.colaborador_id}`}>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
