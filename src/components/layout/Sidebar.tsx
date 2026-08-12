@@ -23,12 +23,13 @@ const navItems = [
   { href: '/vencimentos',    label: 'Vencimentos',      icon: Clock },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
 
   async function handleSignOut() {
+    onNavigate?.()
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
@@ -53,6 +54,7 @@ export function Sidebar() {
           <Link
             key={href}
             href={href}
+            onClick={onNavigate}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
               pathname.startsWith(href)
@@ -70,6 +72,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-slate-700 space-y-1">
         <Link
           href="/configuracoes"
+          onClick={onNavigate}
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
             pathname.startsWith('/configuracoes')
