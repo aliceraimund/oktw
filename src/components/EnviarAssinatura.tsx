@@ -44,7 +44,14 @@ export function EnviarAssinatura({ ficha, size = 'sm', compact = false }: Props)
   }
 
   function enviarWhatsApp() {
-    if (linkWhats) window.open(linkWhats, '_blank', 'noopener,noreferrer')
+    if (!linkWhats) return
+    window.open(linkWhats, '_blank', 'noopener,noreferrer')
+    // Registra o disparo (histórico de cobranças) — fire-and-forget
+    fetch('/api/disparos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fichaId: ficha.id, canal: 'whatsapp', tipo: 'assinatura' }),
+    }).catch(() => {})
   }
 
   return (

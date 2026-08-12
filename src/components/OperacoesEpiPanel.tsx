@@ -14,7 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, formatCA } from '@/lib/utils'
 import type { FichaEntrega, OperacaoEpi } from '@/types/database'
 
 const TIPO_LABEL: Record<string, string> = {
@@ -118,7 +118,7 @@ export function OperacoesEpiPanel({ colaboradorId, fichas, operacoes }: Props) {
                     <TableCell className="text-sm">
                       {(op as { epi?: { nome: string; ca: string } }).epi?.nome ?? '—'}
                       {(op as { epi?: { nome: string; ca: string } }).epi?.ca
-                        ? <span className="text-muted-foreground ml-1 text-xs">CA {(op as { epi?: { nome: string; ca: string } }).epi!.ca}</span>
+                        ? <span className="text-muted-foreground ml-1 text-xs">{formatCA((op as { epi?: { nome: string; ca: string } }).epi!.ca)}</span>
                         : null}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{op.observacao ?? '—'}</TableCell>
@@ -179,7 +179,7 @@ export function OperacoesEpiPanel({ colaboradorId, fichas, operacoes }: Props) {
                   <option value="">Selecione o EPI...</option>
                   {itensDisponivel.map((item) => (
                     <option key={item.id} value={item.epi_id}>
-                      {item.epi?.nome} (CA {item.epi?.ca})
+                      {item.epi?.nome} ({formatCA(item.epi?.ca)})
                     </option>
                   ))}
                 </select>

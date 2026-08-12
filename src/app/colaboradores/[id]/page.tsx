@@ -10,7 +10,7 @@ import { EpiStatusBadge } from '@/components/EpiStatusBadge'
 import { ColaboradorActions } from './ColaboradorActions'
 import { OperacoesEpiPanel } from '@/components/OperacoesEpiPanel'
 import { Plus, FileText, FileDown } from 'lucide-react'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, formatCA } from '@/lib/utils'
 import type { FichaEntrega, ItemEntrega, OperacaoEpi } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -37,10 +37,20 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
 
   const fichasTyped = (fichas as FichaEntrega[]) || []
 
-  // EPIs atualmente ativos (fichas assinadas, itens não vencidos)
+  // IDs de itens de entrega que já foram devolvidos (referenciados por uma devolução)
+  const devolvidos = new Set(
+    fichasTyped
+      .filter((f) => f.tipo === 'retirada')
+      .flatMap((f) => f.itens ?? [])
+      .map((i) => i.item_origem_id)
+      .filter(Boolean)
+  )
+
+  // EPIs atualmente em uso: itens de entregas assinadas que ainda não foram devolvidos
   const episAtivos: ItemEntrega[] = fichasTyped
-    .filter((f) => f.assinado)
+    .filter((f) => f.assinado && f.tipo === 'entrega')
     .flatMap((f) => f.itens ?? [])
+    .filter((i) => !devolvidos.has(i.id))
 
   const roleLabel: Record<string, string> = {
     rh: 'RH / Segurança',
@@ -100,7 +110,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
                   {episAtivos.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.epi?.nome}</TableCell>
-                      <TableCell className="font-mono text-sm">{item.epi?.ca}</TableCell>
+                      <TableCell className="font-mono text-sm">{formatCA(item.epi?.ca)}</TableCell>
                       <TableCell>{item.quantidade}</TableCell>
                       <TableCell>{formatDateBR(item.data_vencimento)}</TableCell>
                       <TableCell>
@@ -135,7 +145,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data</TableHead>
+                    <TableHead>Data da entrega</TableHead>
                     <TableHead>EPIs entregues</TableHead>
                     <TableHead>Assinatura</TableHead>
                     <TableHead>PDF</TableHead>

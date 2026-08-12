@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import type { FichaEntrega, ItemEntrega, AlertaTipo } from '@/types/database'
-import { formatDateBR } from './utils'
+import { formatDateBR, formatCA } from './utils'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -11,11 +11,12 @@ export async function enviarEmailAssinaturaPendente(ficha: FichaEntrega) {
   const link = `${APP_URL}/entregas/${ficha.token_assinatura}/assinar`
   const colaborador = ficha.colaborador!
   const itens = ficha.itens ?? []
+  const ehDev = ficha.tipo === 'retirada'
 
   const itensHtml = itens.map((item, i) => `
     <tr style="background:${i % 2 === 0 ? '#f1f5f9' : '#fff'}">
       <td style="padding:8px 12px">${item.epi?.nome ?? '—'}</td>
-      <td style="padding:8px 12px">${item.epi?.ca ?? '—'}</td>
+      <td style="padding:8px 12px">${formatCA(item.epi?.ca)}</td>
       <td style="padding:8px 12px;text-align:center">${item.quantidade}</td>
       <td style="padding:8px 12px">${formatDateBR(item.data_vencimento)}</td>
     </tr>
@@ -24,11 +25,13 @@ export async function enviarEmailAssinaturaPendente(ficha: FichaEntrega) {
   await resend.emails.send({
     from: FROM,
     to: colaborador.email,
-    subject: 'Confirme o recebimento dos seus EPIs',
+    subject: ehDev ? 'Confirme a devolução dos seus EPIs' : 'Confirme o recebimento dos seus EPIs',
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
         <h2 style="color:#1e293b">Olá, ${colaborador.nome}!</h2>
-        <p>Você recebeu EPIs em <strong>${formatDateBR(ficha.data_entrega)}</strong> que precisam de confirmação de recebimento:</p>
+        <p>${ehDev
+          ? `Registramos a devolução dos EPIs abaixo em <strong>${formatDateBR(ficha.data_entrega)}</strong>. Confirme assinando eletronicamente:`
+          : `Você recebeu EPIs em <strong>${formatDateBR(ficha.data_entrega)}</strong> que precisam de confirmação de recebimento:`}</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <thead>
             <tr style="background:#0f172a;color:#fff">
@@ -41,10 +44,12 @@ export async function enviarEmailAssinaturaPendente(ficha: FichaEntrega) {
           <tbody>${itensHtml}</tbody>
         </table>
         <a href="${link}" style="display:inline-block;background:#0f172a;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px">
-          Assinar recebimento
+          ${ehDev ? 'Assinar devolução' : 'Assinar recebimento'}
         </a>
         <p style="color:#64748b;font-size:12px;margin-top:24px">
-          Ao assinar, você confirma o recebimento dos equipamentos e declara ter lido o Termo de Responsabilidade (NR-6).<br/>
+          ${ehDev
+            ? 'Ao assinar, você confirma a devolução dos equipamentos à empresa (NR-6).'
+            : 'Ao assinar, você confirma o recebimento dos equipamentos e declara ter lido o Termo de Responsabilidade (NR-6).'}<br/>
           Este link é único e pessoal. Não compartilhe com outras pessoas.
         </p>
       </div>
@@ -85,7 +90,7 @@ export async function enviarAlertaVencimento(
           </tr>
           <tr>
             <td style="padding:8px 12px;font-weight:600">CA</td>
-            <td style="padding:8px 12px">${epi.ca}</td>
+            <td style="padding:8px 12px">${formatCA(epi.ca)}</td>
           </tr>
           <tr style="background:#f1f5f9">
             <td style="padding:8px 12px;font-weight:600">Vencimento</td>

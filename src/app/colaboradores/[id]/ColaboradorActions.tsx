@@ -11,6 +11,7 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SetorInput } from '@/components/SetorInput'
 import { AlertTriangle, Loader2, Pencil, Trash2, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { Profile } from '@/types/database'
@@ -168,7 +169,7 @@ export function ColaboradorActions({ colaborador }: Props) {
                 </div>
                 <div className="space-y-2">
                   <Label>Setor</Label>
-                  <Input value={form.setor} onChange={(e) => update('setor', e.target.value)} />
+                  <SetorInput value={form.setor} onChange={(v) => update('setor', v)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Cargo</Label>

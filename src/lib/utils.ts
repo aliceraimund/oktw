@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
-import { differenceInDays, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import type { EpiStatus } from '@/types/database'
 
 export function cn(...inputs: ClassValue[]) {
@@ -15,6 +15,13 @@ export function nowBrasilia(): Date {
 }
 
 export function formatDateBR(dateStr: string): string {
+  if (!dateStr) return ''
+  // Valor apenas-data (YYYY-MM-DD): formata direto, SEM conversão de fuso.
+  // Evita o bug de "voltar um dia" ao converter meia-noite UTC para Brasília.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-')
+    return `${d}/${m}/${y}`
+  }
   return formatInTimeZone(parseISO(dateStr), TZ, 'dd/MM/yyyy')
 }
 
@@ -23,11 +30,23 @@ export function formatDateTimeBR(dateStr: string): string {
 }
 
 export function diasParaVencer(dataVencimento: string): number {
-  const hoje = nowBrasilia()
-  hoje.setHours(0, 0, 0, 0)
-  const venc = toZonedTime(parseISO(dataVencimento), TZ)
-  venc.setHours(0, 0, 0, 0)
-  return differenceInDays(venc, hoje)
+  // Comparação puramente por dia de calendário (sem hora/fuso), evitando drift.
+  const hojeStr = formatInTimeZone(new Date(), TZ, 'yyyy-MM-dd')
+  const [hy, hm, hd] = hojeStr.split('-').map(Number)
+  const [vy, vm, vd] = dataVencimento.slice(0, 10).split('-').map(Number)
+  const hoje = Date.UTC(hy, hm - 1, hd)
+  const venc = Date.UTC(vy, vm - 1, vd)
+  return Math.round((venc - hoje) / 86_400_000)
+}
+
+/**
+ * Formata o CA de forma canônica "CA-XXXXX", evitando a duplicação "CA CA-123".
+ * Aceita valores já com prefixo ("CA-123", "CA 123") ou só o número ("123").
+ */
+export function formatCA(ca: string | null | undefined): string {
+  if (!ca) return '—'
+  const num = ca.trim().replace(/^ca[\s-]*/i, '').trim()
+  return num ? `CA-${num}` : ca
 }
 
 export function getEpiStatus(diasRestantes: number): EpiStatus {

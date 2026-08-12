@@ -19,7 +19,7 @@ const navItems = [
   { href: '/dashboard',      label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/colaboradores',  label: 'Colaboradores',   icon: Users },
   { href: '/epis',           label: 'Catálogo de EPIs', icon: HardHat },
-  { href: '/entregas',       label: 'Entregas',         icon: Package },
+  { href: '/entregas',       label: 'Fichas de EPI',    icon: Package },
   { href: '/vencimentos',    label: 'Vencimentos',      icon: Clock },
 ]
 

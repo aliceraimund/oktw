@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Pencil, Trash2, Loader2 } from 'lucide-react'
+import { formatCA, formatDateBR } from '@/lib/utils'
 import type { Epi } from '@/types/database'
 
 export function EpisTableClient({ epis }: { epis: Epi[] }) {
@@ -41,7 +42,8 @@ export function EpisTableClient({ epis }: { epis: Epi[] }) {
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>CA</TableHead>
-            <TableHead>Validade de fábrica (dias)</TableHead>
+            <TableHead>Validade do CA</TableHead>
+            <TableHead>Vida útil por uso (dias)</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-20 text-right">Ações</TableHead>
           </TableRow>
@@ -50,7 +52,10 @@ export function EpisTableClient({ epis }: { epis: Epi[] }) {
           {epis.map((epi) => (
             <TableRow key={epi.id}>
               <TableCell className="font-medium">{epi.nome}</TableCell>
-              <TableCell className="font-mono text-sm">{epi.ca}</TableCell>
+              <TableCell className="font-mono text-sm">{formatCA(epi.ca)}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {epi.validade_ca ? formatDateBR(epi.validade_ca) : '—'}
+              </TableCell>
               <TableCell className="text-muted-foreground">{epi.validade_dias} dias</TableCell>
               <TableCell>
                 <Badge variant={epi.ativo ? 'success' : 'outline'}>

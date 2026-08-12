@@ -20,7 +20,7 @@ export default async function EntregasPage() {
   return (
     <div>
       <Header
-        title="Fichas de Entrega"
+        title="Fichas de EPI"
         subtitle={`${fichas?.length ?? 0} fichas registradas`}
         actions={
           <Button asChild size="sm">

@@ -51,6 +51,7 @@ export interface ItemEntrega {
   quantidade: number
   validade_dias: number
   data_vencimento: string
+  item_origem_id: string | null
   created_at: string
   // joins
   epi?: Epi
@@ -84,6 +85,16 @@ export interface OperacaoEpi {
   // joins
   epi?: Epi
   ficha?: FichaEntrega
+}
+
+export interface Disparo {
+  id: string
+  ficha_id: string | null
+  item_id: string | null
+  canal: 'email' | 'whatsapp'
+  tipo: 'assinatura' | 'vencimento'
+  enviado_por: string | null
+  created_at: string
 }
 
 export interface Alerta {

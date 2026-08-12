@@ -1,5 +1,5 @@
 import type { FichaEntrega, Profile, Epi } from '@/types/database'
-import { formatDateBR } from './utils'
+import { formatDateBR, formatCA } from './utils'
 
 // Endereço base do sistema (usado nos links de assinatura enviados por WhatsApp).
 // No cliente, NEXT_PUBLIC_APP_URL é embutido no build; cai para o origin atual se faltar.
@@ -37,11 +37,12 @@ export function linkWhatsApp(telefone: string | null | undefined, mensagem: stri
 export function mensagemAssinatura(ficha: FichaEntrega): string {
   const nome = ficha.colaborador?.nome ?? 'Colaborador'
   const link = `${appUrl()}/entregas/${ficha.token_assinatura}/assinar`
-  const tipo = ficha.tipo === 'retirada' ? 'a retirada' : 'o recebimento'
+  const tipo = ficha.tipo === 'retirada' ? 'a devolução' : 'o recebimento'
   return (
     `Olá, ${nome}! ` +
     `Você tem uma ficha de EPI aguardando sua assinatura. ` +
     `Confirme ${tipo} dos equipamentos assinando eletronicamente neste link:\n${link}\n\n` +
+    `⚠️ Importante: ao abrir o link, *permita o acesso à sua localização* quando o navegador pedir — isso reforça a validade jurídica da sua assinatura.\n\n` +
     `Este link é pessoal e único. Não compartilhe.`
   )
 }
@@ -59,7 +60,7 @@ export function mensagemVencimento(
 ): string {
   return (
     `Olá, ${colaborador.nome}! ` +
-    `O seu EPI "${epi.nome}" (CA ${epi.ca}) venceu em ${formatDateBR(dataVencimento)}. ` +
+    `O seu EPI "${epi.nome}" (${formatCA(epi.ca)}) venceu em ${formatDateBR(dataVencimento)}. ` +
     `Procure o setor responsável para providenciar a troca o quanto antes. ` +
     `O uso de EPI vencido não é permitido pela NR-6.`
   )

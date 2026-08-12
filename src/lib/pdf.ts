@@ -1,6 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import type { FichaEntrega, Profile } from '@/types/database'
-import { formatDateBR, formatDateTimeBR } from './utils'
+import { formatDateBR, formatDateTimeBR, formatCA } from './utils'
 
 async function sha256(data: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -59,9 +59,10 @@ export async function gerarFichaEntregaPDFv2(
   const width = W, height = H
 
   // Tipo determina os textos do documento
-  const tipoLabel    = ficha.tipo === 'retirada' ? 'RETIRADA' : 'ENTREGA'
-  const tipoSubtitle = ficha.tipo === 'retirada'
-    ? 'Ficha de Retirada de EPI — NR-6'
+  const ehDev        = ficha.tipo === 'retirada'
+  const tipoLabel    = ehDev ? 'DEVOLUÇÃO' : 'ENTREGA'
+  const tipoSubtitle = ehDev
+    ? 'Confirmação de Devolução de EPI — NR-6'
     : 'Ficha de Entrega de EPI — NR-6'
 
   // ── Cabeçalho e rodapé reutilizáveis (garantem consistência entre páginas) ──
@@ -87,9 +88,12 @@ export async function gerarFichaEntregaPDFv2(
   let y = desenharCabecalho(page)
 
   // ── Título ─────────────────────────────────────────────────
-  page.drawText(`TERMO DE RESPONSABILIDADE PELA GUARDA E USO DO EPI — ${tipoLabel}`, {
-    x: margin, y, size: 9, font: fontBold, color: rgb(0.06, 0.09, 0.16),
-  })
+  page.drawText(
+    ehDev
+      ? 'CONFIRMAÇÃO DE DEVOLUÇÃO DE EPI'
+      : `TERMO DE RESPONSABILIDADE PELA GUARDA E USO DO EPI — ${tipoLabel}`,
+    { x: margin, y, size: 9, font: fontBold, color: rgb(0.06, 0.09, 0.16) }
+  )
   y -= 24
 
   // ── Colaborador ────────────────────────────────────────────
@@ -102,8 +106,8 @@ export async function gerarFichaEntregaPDFv2(
     ['Cargo', colaborador.cargo ?? '—'],
     ['Setor', colaborador.setor ?? '—'],
     ['CTPS', colaborador.ctps ?? '—'],
-    ['Tipo', tipoLabel === 'RETIRADA' ? 'Retirada de EPI' : 'Entrega de EPI'],
-    [`Data de ${tipoLabel.toLowerCase()}`, formatDateBR(ficha.data_entrega)],
+    ['Tipo', ehDev ? 'Devolução de EPI' : 'Entrega de EPI'],
+    [`Data da ${ehDev ? 'devolução' : 'entrega'}`, formatDateBR(ficha.data_entrega)],
   ] as [string, string][]) {
     page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold })
     page.drawText(valor, { x: margin + 110, y, size: 8, font: fontRegular })
@@ -115,7 +119,7 @@ export async function gerarFichaEntregaPDFv2(
   y -= 16
 
   // ── EPIs ───────────────────────────────────────────────────
-  page.drawText('EQUIPAMENTOS RECEBIDOS', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  page.drawText(ehDev ? 'EQUIPAMENTOS DEVOLVIDOS' : 'EQUIPAMENTOS RECEBIDOS', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 14
 
   // Cabeçalho da tabela (5 colunas: nome | CA | Val.CA | Qtd | Vencimento)
@@ -132,7 +136,7 @@ export async function gerarFichaEntregaPDFv2(
     const nome = (item.epi?.nome ?? '').substring(0, 30)
     const validadeCa = item.epi?.validade_ca ? formatDateBR(item.epi.validade_ca) : '—'
     page.drawText(nome, { x: cols.epi, y, size: 8, font: fontRegular })
-    page.drawText(item.epi?.ca ?? '', { x: cols.ca, y, size: 8, font: fontRegular })
+    page.drawText(formatCA(item.epi?.ca), { x: cols.ca, y, size: 8, font: fontRegular })
     page.drawText(validadeCa, { x: cols.valca, y, size: 8, font: fontRegular })
     page.drawText(String(item.quantidade), { x: cols.qtd, y, size: 8, font: fontRegular })
     page.drawText(formatDateBR(item.data_vencimento), { x: cols.venc, y, size: 8, font: fontRegular })
@@ -143,14 +147,21 @@ export async function gerarFichaEntregaPDFv2(
   page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
   y -= 16
 
-  // ── Termo de Responsabilidade ──────────────────────────────
-  page.drawText('TERMO DE RESPONSABILIDADE', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  // ── Termo / Declaração ─────────────────────────────────────
+  page.drawText(ehDev ? 'DECLARAÇÃO DE DEVOLUÇÃO' : 'TERMO DE RESPONSABILIDADE', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 14
 
   const MIN_ASSINATURA = 150 // altura mínima livre para o bloco de assinatura
 
-  // O Termo pagina quando chega perto do rodapé — nenhuma cláusula é truncada
-  for (const paragrafo of TERMO_PARAGRAFOS) {
+  // Devolução usa uma declaração curta; entrega usa o termo completo.
+  const DEVOLUCAO_PARAGRAFOS = [
+    'Declaro, para os devidos fins, que devolvi à empresa OKTW COMERCIO E SERVICOS LTDA, CNPJ: 51.747.453/0001-17, os Equipamentos de Proteção Individual (EPI) discriminados acima.',
+    'Declaro ainda que consinto expressamente com a assinatura eletrônica da presente confirmação de devolução, nos termos da Lei nº 14.063/2020 e conforme a NR-6 item 6.5.1, tendo plena ciência de que esta assinatura possui validade legal equivalente à assinatura manuscrita.',
+  ]
+  const paragrafos = ehDev ? DEVOLUCAO_PARAGRAFOS : TERMO_PARAGRAFOS
+
+  // O texto pagina quando chega perto do rodapé — nenhuma cláusula é truncada
+  for (const paragrafo of paragrafos) {
     const linhas = wrapText(paragrafo, 95)
     for (const linha of linhas) {
       if (y < 90) {
@@ -345,7 +356,7 @@ export async function gerarRelatorioColaboradorPDF(
 
     for (const item of (ficha.itens ?? [])) {
       page.drawText((item.epi?.nome ?? '').substring(0, 38), { x: cols.nome, y, size: 7.5, font: fontRegular })
-      page.drawText(item.epi?.ca ?? '',                      { x: cols.ca,   y, size: 7.5, font: fontRegular })
+      page.drawText(formatCA(item.epi?.ca),                  { x: cols.ca,   y, size: 7.5, font: fontRegular })
       page.drawText(String(item.quantidade),                 { x: cols.qtd,  y, size: 7.5, font: fontRegular })
       page.drawText(formatDateBR(item.data_vencimento),      { x: cols.venc, y, size: 7.5, font: fontRegular })
       y -= 14

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SetorInput } from '@/components/SetorInput'
 import { Loader2 } from 'lucide-react'
 
 export default function NovoColaboradorPage() {
@@ -93,7 +94,7 @@ export default function NovoColaboradorPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Setor</Label>
-                  <Input value={form.setor} onChange={(e) => update('setor', e.target.value)} />
+                  <SetorInput value={form.setor} onChange={(v) => update('setor', v)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Cargo</Label>

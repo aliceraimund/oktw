@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -12,9 +12,10 @@ import { Combobox } from '@/components/ui/combobox'
 import { NovoColaboradorDialog } from '@/components/NovoColaboradorDialog'
 import { NovoEpiDialog } from '@/components/NovoEpiDialog'
 import { EnviarAssinatura } from '@/components/EnviarAssinatura'
-import { Loader2, Send, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Send, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { addDays, format } from 'date-fns'
-import type { Profile, Epi, FichaEntrega } from '@/types/database'
+import { formatCA, formatDateBR } from '@/lib/utils'
+import type { Profile, Epi, FichaEntrega, ItemEntrega } from '@/types/database'
 
 interface ItemForm {
   epi_id: string
@@ -54,6 +55,48 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
   const [dataEntrega, setDataEntrega] = useState(today)
   const [tipo, setTipo] = useState<'entrega' | 'retirada'>('entrega')
   const [itens, setItens] = useState<ItemForm[]>([itemVazio()])
+
+  // Devolução (tipo=retirada): EPIs que o colaborador tem em uso, para devolver
+  const [itensEmUso, setItensEmUso] = useState<ItemEntrega[]>([])
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [carregandoEmUso, setCarregandoEmUso] = useState(false)
+
+  useEffect(() => {
+    if (tipo !== 'retirada' || !colaboradorId) {
+      setItensEmUso([]); setSelecionados(new Set()); return
+    }
+    let ativo = true
+    setCarregandoEmUso(true)
+    ;(async () => {
+      // EPIs entregues (fichas de entrega assinadas) do colaborador
+      const { data: entregues } = await supabase
+        .from('itens_entrega')
+        .select('*, epi:epis(*), ficha:fichas_entrega!inner(colaborador_id, assinado, tipo, data_entrega)')
+        .eq('ficha.colaborador_id', colaboradorId)
+        .eq('ficha.assinado', true)
+        .eq('ficha.tipo', 'entrega')
+      // Itens já devolvidos (origem já referenciada por alguma devolução)
+      const { data: devolvidos } = await supabase
+        .from('itens_entrega')
+        .select('item_origem_id, ficha:fichas_entrega!inner(colaborador_id)')
+        .eq('ficha.colaborador_id', colaboradorId)
+        .not('item_origem_id', 'is', null)
+      const jaDevolvidos = new Set(
+        (devolvidos ?? []).map((d: { item_origem_id: string | null }) => d.item_origem_id)
+      )
+      const emUso = ((entregues as ItemEntrega[]) ?? []).filter((i) => !jaDevolvidos.has(i.id))
+      if (ativo) { setItensEmUso(emUso); setSelecionados(new Set()); setCarregandoEmUso(false) }
+    })()
+    return () => { ativo = false }
+  }, [tipo, colaboradorId, supabase])
+
+  function toggleSelecionado(id: string) {
+    setSelecionados((prev) => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id); else n.add(id)
+      return n
+    })
+  }
 
   function handleColaboradorCriado(novo: Profile) {
     setColaboradores((prev) => [novo, ...prev])
@@ -128,7 +171,9 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
     setItens((prev) => prev.map((item, i) => i !== index ? item : { ...item, [field]: value }))
   }
 
-  const podeEnviar = colaboradorId && itens.every((i) => i.epi_id && i.data_vencimento)
+  const podeEnviar = tipo === 'retirada'
+    ? Boolean(colaboradorId && selecionados.size > 0)
+    : Boolean(colaboradorId && itens.every((i) => i.epi_id && i.data_vencimento))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -151,16 +196,27 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
       return
     }
 
-    // 2. Inserir os itens
-    const { error: itensError } = await supabase.from('itens_entrega').insert(
-      itens.map((item) => ({
-        ficha_id: ficha.id,
-        epi_id: item.epi_id,
-        quantidade: item.quantidade,
-        validade_dias: item.validade_dias,
-        data_vencimento: item.data_vencimento,
-      }))
-    )
+    // 2. Inserir os itens — entrega (catálogo) ou devolução (itens em uso selecionados)
+    const itensParaInserir = tipo === 'retirada'
+      ? itensEmUso
+          .filter((i) => selecionados.has(i.id))
+          .map((i) => ({
+            ficha_id: ficha.id,
+            epi_id: i.epi_id,
+            quantidade: i.quantidade,
+            validade_dias: i.validade_dias,
+            data_vencimento: i.data_vencimento,
+            item_origem_id: i.id, // vínculo com a entrega original
+          }))
+      : itens.map((item) => ({
+          ficha_id: ficha.id,
+          epi_id: item.epi_id,
+          quantidade: item.quantidade,
+          validade_dias: item.validade_dias,
+          data_vencimento: item.data_vencimento,
+        }))
+
+    const { error: itensError } = await supabase.from('itens_entrega').insert(itensParaInserir)
 
     if (itensError) {
       setError(itensError.message)
@@ -258,18 +314,19 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="entrega">Entrega de EPI</SelectItem>
-                  <SelectItem value="retirada">Retirada de EPI</SelectItem>
+                  <SelectItem value="retirada">Devolução de EPI</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Data *</Label>
+              <Label>Data da {tipo === 'retirada' ? 'devolução' : 'entrega'} *</Label>
               <Input
                 type="date"
                 value={dataEntrega}
                 onChange={(e) => handleDataEntregaChange(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">Data em que o EPI foi {tipo === 'retirada' ? 'devolvido' : 'entregue'} (não é a data da assinatura).</p>
             </div>
           </div>
         </CardContent>
@@ -278,9 +335,10 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
       {/* Itens (EPIs) */}
       <Card>
         <CardHeader>
-          <CardTitle>EPIs entregues</CardTitle>
+          <CardTitle>{tipo === 'retirada' ? 'EPIs a devolver' : 'EPIs entregues'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {tipo === 'entrega' && (<>
           {itens.map((item, index) => {
             const epiSelecionado = epis.find((e) => e.id === item.epi_id)
             const validadePadrao = epiSelecionado?.validade_dias
@@ -312,7 +370,7 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
                       options={epis.map((epi) => ({
                         value: epi.id,
                         label: epi.nome,
-                        sublabel: `CA ${epi.ca}`,
+                        sublabel: formatCA(epi.ca),
                       }))}
                       placeholder="Selecionar EPI..."
                       searchPlaceholder="Buscar por nome ou CA..."
@@ -330,6 +388,16 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
                     />
                   </div>
                 </div>
+
+                {epiSelecionado?.validade_ca && epiSelecionado.validade_ca < today && (
+                  <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      Atenção: o CA deste EPI venceu em <strong>{formatDateBR(epiSelecionado.validade_ca)}</strong>.
+                      Um EPI com CA vencido não deve ser entregue (requisito fiscalizado pela NR-6).
+                    </span>
+                  </div>
+                )}
 
                 {/* Validade */}
                 <div className="space-y-2">
@@ -391,6 +459,46 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
             <Plus className="h-4 w-4 mr-2" />
             Adicionar outro EPI
           </Button>
+          </>)}
+
+          {tipo === 'retirada' && (
+            !colaboradorId ? (
+              <p className="text-sm text-muted-foreground">Selecione um colaborador para ver os EPIs em uso.</p>
+            ) : carregandoEmUso ? (
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Carregando EPIs em uso...
+              </p>
+            ) : itensEmUso.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Este colaborador não tem EPIs em uso para devolver.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Marque os EPIs que estão sendo devolvidos (a devolução pode ser parcial):
+                </p>
+                {itensEmUso.map((i) => (
+                  <label
+                    key={i.id}
+                    className={`flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${selecionados.has(i.id) ? 'border-slate-800 bg-slate-50' : 'hover:bg-slate-50'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-slate-800"
+                      checked={selecionados.has(i.id)}
+                      onChange={() => toggleSelecionado(i.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{i.epi?.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatCA(i.epi?.ca)} · Qtd: {i.quantidade} · entregue em {formatDateBR(i.ficha?.data_entrega ?? '')}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )
+          )}
         </CardContent>
       </Card>
 

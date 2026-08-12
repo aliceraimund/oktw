@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { HardHat, CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { HardHat, CheckCircle2, Loader2, XCircle, MapPin, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SignatureCanvas, type SignatureCanvasHandle } from '@/components/SignatureCanvas'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, formatCA } from '@/lib/utils'
 import type { FichaEntrega } from '@/types/database'
 
 type PageState = 'loading' | 'ready' | 'already_signed' | 'not_found' | 'submitting' | 'success' | 'error'
@@ -46,16 +46,21 @@ export default function AssinarPage() {
     loadFicha()
   }, [token])
 
-  useEffect(() => {
+  function pedirLocalizacao() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setGeo({ lat: null, lng: null, status: 'unavailable' })
       return
     }
+    setGeo((g) => ({ ...g, status: 'pending' }))
     navigator.geolocation.getCurrentPosition(
       (pos) => setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude, status: 'granted' }),
       () => setGeo({ lat: null, lng: null, status: 'denied' }),
       { timeout: 8000 }
     )
+  }
+
+  useEffect(() => {
+    pedirLocalizacao()
   }, [])
 
   function handleConsentimento(checked: boolean) {
@@ -160,6 +165,7 @@ export default function AssinarPage() {
   }
 
   const colaborador = ficha?.colaborador
+  const ehDevolucao = ficha?.tipo === 'retirada'
 
   return (
     <div className="min-h-screen bg-slate-50 py-6 px-4">
@@ -172,7 +178,7 @@ export default function AssinarPage() {
           </div>
           <div>
             <p className="font-bold text-slate-900">OKTW</p>
-            <p className="text-slate-500 text-xs">Confirmação de recebimento de EPIs</p>
+            <p className="text-slate-500 text-xs">{ehDevolucao ? 'Confirmação de devolução de EPIs' : 'Confirmação de recebimento de EPIs'}</p>
           </div>
         </div>
 
@@ -195,7 +201,7 @@ export default function AssinarPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              EPIs recebidos em {formatDateBR(ficha?.data_entrega ?? '')}
+              {ehDevolucao ? 'EPIs devolvidos em' : 'EPIs recebidos em'} {formatDateBR(ficha?.data_entrega ?? '')}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 space-y-3">
@@ -204,7 +210,7 @@ export default function AssinarPage() {
                 <div className="flex justify-between gap-2">
                   <div>
                     <p className="font-medium text-sm">{item.epi?.nome}</p>
-                    <p className="text-xs text-muted-foreground">CA: {item.epi?.ca} · Qtd: {item.quantidade}</p>
+                    <p className="text-xs text-muted-foreground">{formatCA(item.epi?.ca)} · Qtd: {item.quantidade}</p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
                     <p>Vence em</p>
@@ -216,7 +222,23 @@ export default function AssinarPage() {
           </CardContent>
         </Card>
 
-        {/* Termo de Responsabilidade */}
+        {/* Termo (entrega) ou Declaração (devolução) */}
+        {ehDevolucao ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Declaração de devolução
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-xs text-slate-600">
+              Declaro que estou devolvendo à empresa OKTW COMERCIO E SERVICOS LTDA (CNPJ 51.747.453/0001-17)
+              os Equipamentos de Proteção Individual listados acima, e consinto com a assinatura eletrônica
+              desta confirmação, nos termos da Lei nº 14.063/2020 e conforme a NR-6 item 6.5.1.
+            </p>
+          </CardContent>
+        </Card>
+        ) : (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -245,6 +267,40 @@ export default function AssinarPage() {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {/* Status da localização — reforça a validade jurídica da assinatura */}
+        {geo.status === 'granted' ? (
+          <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            <MapPin className="h-4 w-4 shrink-0" />
+            Localização registrada — sua assinatura terá validade reforçada.
+          </div>
+        ) : geo.status === 'pending' ? (
+          <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border rounded-lg px-3 py-2">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            Obtendo sua localização...
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">
+                {geo.status === 'denied'
+                  ? 'Localização bloqueada.'
+                  : 'Localização indisponível neste dispositivo.'}
+              </p>
+              <p>
+                Recomendamos fortemente permitir o acesso à localização, pois ela reforça a validade
+                jurídica da assinatura.{' '}
+                {geo.status === 'denied' && (
+                  <button type="button" onClick={pedirLocalizacao} className="underline font-medium">
+                    Tentar novamente
+                  </button>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Consentimento eletrônico — obrigatório */}
         <div className={`p-4 rounded-lg border-2 transition-colors ${consentimento ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-slate-50'}`}>
@@ -256,9 +312,9 @@ export default function AssinarPage() {
               onChange={(e) => handleConsentimento(e.target.checked)}
             />
             <span className="text-xs text-slate-700 leading-relaxed">
-              Li e compreendi o Termo de Responsabilidade acima, e <strong>consinto expressamente</strong> com a
-              utilização de assinatura eletrônica, com força probatória nos termos da{' '}
-              <strong>Lei nº 14.063/2020</strong> e conforme <strong>NR-6 item 6.5.1</strong>.
+              Li e compreendi {ehDevolucao ? 'a Declaração de devolução' : 'o Termo de Responsabilidade'} acima, e{' '}
+              <strong>consinto expressamente</strong> com a utilização de assinatura eletrônica, com força probatória
+              nos termos da <strong>Lei nº 14.063/2020</strong> e conforme <strong>NR-6 item 6.5.1</strong>.
             </span>
           </label>
         </div>
@@ -272,8 +328,9 @@ export default function AssinarPage() {
           </CardHeader>
           <CardContent className="pt-0 space-y-3">
             <p className="text-sm text-muted-foreground">
-              Ao assinar abaixo, declaro que li e concordo com o Termo de Responsabilidade acima e que recebi
-              todos os EPIs listados em perfeito estado.
+              {ehDevolucao
+                ? 'Ao assinar abaixo, declaro que devolvi à empresa todos os EPIs listados acima.'
+                : 'Ao assinar abaixo, declaro que li e concordo com o Termo de Responsabilidade acima e que recebi todos os EPIs listados em perfeito estado.'}
             </p>
             <SignatureCanvas ref={sigRef} />
           </CardContent>
@@ -287,7 +344,7 @@ export default function AssinarPage() {
           {state === 'submitting' ? (
             <><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando assinatura...</>
           ) : (
-            'Confirmar recebimento e assinar'
+            ehDevolucao ? 'Confirmar devolução e assinar' : 'Confirmar recebimento e assinar'
           )}
         </Button>
 

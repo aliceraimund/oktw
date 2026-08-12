@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase-server'
+import { revalidatePath } from 'next/cache'
+import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase-server'
 import { enviarEmailAssinaturaPendente } from '@/lib/email'
 import type { FichaEntrega } from '@/types/database'
 
@@ -24,6 +25,19 @@ export async function POST(req: NextRequest) {
 
   try {
     await enviarEmailAssinaturaPendente(ficha as FichaEntrega)
+
+    // Registra o disparo (histórico de cobranças)
+    let enviadoPor: string | null = null
+    try {
+      const supabaseUser = await createServerSupabaseClient()
+      const { data: { user } } = await supabaseUser.auth.getUser()
+      enviadoPor = user?.id ?? null
+    } catch { /* segue sem autor */ }
+    await supabase.from('disparos').insert([{
+      ficha_id: ficha.id, canal: 'email', tipo: 'assinatura', enviado_por: enviadoPor,
+    }])
+    revalidatePath('/dashboard')
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Erro ao enviar e-mail:', err)

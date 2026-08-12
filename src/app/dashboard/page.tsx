@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EpiStatusBadge } from '@/components/EpiStatusBadge'
 import { EnviarAssinatura } from '@/components/EnviarAssinatura'
 import { LembreteVencimentoWhatsApp } from '@/components/LembreteVencimentoWhatsApp'
-import { diasParaVencer, formatDateBR } from '@/lib/utils'
+import { diasParaVencer, formatDateBR, formatCA } from '@/lib/utils'
 import { Users, HardHat, AlertTriangle, Clock, FileSignature } from 'lucide-react'
 import Link from 'next/link'
 import type { ItemEntrega, FichaEntrega } from '@/types/database'
@@ -19,6 +19,7 @@ export default async function DashboardPage() {
     { count: totalEpis },
     { data: itens },
     { data: pendentes },
+    { data: disparos },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('epis').select('*', { count: 'exact', head: true }).eq('ativo', true),
@@ -31,9 +32,23 @@ export default async function DashboardPage() {
       .select('*, colaborador:profiles!fichas_entrega_colaborador_id_fkey(*), itens:itens_entrega(*, epi:epis(*))')
       .eq('assinado', false)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('disparos')
+      .select('ficha_id, canal, created_at')
+      .eq('tipo', 'assinatura')
+      .order('created_at', { ascending: false }),
   ])
 
   const fichasPendentes = (pendentes as FichaEntrega[]) ?? []
+
+  // Agrupa disparos por ficha: total + último acionamento
+  const disparosPorFicha = new Map<string, { total: number; canal: string; em: string }>()
+  for (const d of (disparos as { ficha_id: string | null; canal: string; created_at: string }[]) ?? []) {
+    if (!d.ficha_id) continue
+    const atual = disparosPorFicha.get(d.ficha_id)
+    if (!atual) disparosPorFicha.set(d.ficha_id, { total: 1, canal: d.canal, em: d.created_at })
+    else atual.total += 1 // já ordenado desc, então o primeiro visto é o mais recente
+  }
 
   const itensAssinados = ((itens as ItemEntrega[]) || []).filter((i) => i.ficha?.assinado)
 
@@ -109,6 +124,19 @@ export default async function DashboardPage() {
                       <p className="text-xs text-muted-foreground truncate">
                         {ficha.itens?.map((i) => i.epi?.nome).filter(Boolean).join(', ') || 'Sem itens'}
                       </p>
+                      {(() => {
+                        const d = disparosPorFicha.get(ficha.id)
+                        return d ? (
+                          <p className="text-xs text-violet-700 mt-0.5">
+                            Já acionado {d.total}×{' '}
+                            <span className="text-muted-foreground">
+                              · último em {formatDateBR(d.em)} por {d.canal === 'whatsapp' ? 'WhatsApp' : 'e-mail'}
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="text-xs text-amber-600 mt-0.5">Ainda não acionado</p>
+                        )
+                      })()}
                     </div>
                     <div className="shrink-0">
                       <EnviarAssinatura ficha={ficha} />
@@ -140,7 +168,7 @@ export default async function DashboardPage() {
                           {item.ficha?.colaborador?.nome}
                         </Link>
                       </p>
-                      <p className="text-xs text-muted-foreground">{item.epi?.nome} · CA {item.epi?.ca}</p>
+                      <p className="text-xs text-muted-foreground">{item.epi?.nome} · {formatCA(item.epi?.ca)}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">{formatDateBR(item.data_vencimento)}</span>
