@@ -60,7 +60,7 @@ export function EntregasTableClient({ fichas }: { fichas: FichaEntrega[] }) {
           <TableRow>
             <TableHead>Colaborador</TableHead>
             <TableHead>Tipo</TableHead>
-            <TableHead>Data da entrega</TableHead>
+            <TableHead>Data do registro</TableHead>
             <TableHead>EPIs</TableHead>
             <TableHead>Assinatura</TableHead>
             <TableHead>PDF</TableHead>

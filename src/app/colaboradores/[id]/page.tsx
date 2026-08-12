@@ -145,8 +145,8 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data da entrega</TableHead>
-                    <TableHead>EPIs entregues</TableHead>
+                    <TableHead>Data do registro</TableHead>
+                    <TableHead>EPIs</TableHead>
                     <TableHead>Assinatura</TableHead>
                     <TableHead>PDF</TableHead>
                   </TableRow>
