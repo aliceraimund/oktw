@@ -4,8 +4,8 @@ import { formatDateBR } from './utils'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-// Em produção: trocar para domínio verificado (ex: noreply@oktw.com.br)
-const FROM = 'OKTW EPI Manager <onboarding@resend.dev>'
+// Domínio oktwgroup.com verificado no Resend (região sa-east-1)
+const FROM = 'OKTW EPI Manager <epi@oktwgroup.com>'
 
 export async function enviarEmailAssinaturaPendente(ficha: FichaEntrega) {
   const link = `${APP_URL}/entregas/${ficha.token_assinatura}/assinar`
