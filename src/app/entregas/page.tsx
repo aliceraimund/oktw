@@ -26,7 +26,7 @@ export default async function EntregasPage() {
           <Button asChild size="sm">
             <Link href="/entregas/nova">
               <Plus className="h-4 w-4 mr-2" />
-              Nova entrega
+              Nova ficha
             </Link>
           </Button>
         }

@@ -74,7 +74,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
             <Button asChild size="sm">
               <Link href={`/entregas/nova?colaborador=${id}`}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nova entrega
+                Nova ficha
               </Link>
             </Button>
           </div>

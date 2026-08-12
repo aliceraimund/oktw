@@ -271,7 +271,7 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
               setDataEntrega(today)
               setItens([itemVazio()])
             }}>
-              Nova entrega
+              Nova ficha
             </Button>
           </div>
         </CardContent>

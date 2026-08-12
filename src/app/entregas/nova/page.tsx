@@ -15,7 +15,7 @@ export default async function NovaEntregaPage() {
 
   return (
     <div>
-      <Header title="Nova entrega de EPI" subtitle="Registrar entrega e enviar link de assinatura" />
+      <Header title="Nova ficha de EPI" subtitle="Registrar entrega ou devolução e enviar link de assinatura" />
       <div className="p-6 max-w-2xl">
         <NovaEntregaForm
           colaboradores={(colaboradores as Profile[]) || []}
