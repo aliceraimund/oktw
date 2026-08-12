@@ -1,10 +1,7 @@
-import { Sidebar } from '@/components/layout/Sidebar'
+import { AuthShell } from '@/components/layout/AuthShell'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <AuthShell>{children}</AuthShell>
   )
 }

@@ -69,7 +69,7 @@ export default async function DashboardPage() {
   return (
     <div>
       <Header title="Dashboard" subtitle="Visão geral do sistema de EPIs" />
-      <div className="p-6 space-y-6">
+      <div className="space-y-6 p-4 sm:p-6">
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map(({ label, value, icon: Icon, color }) => (

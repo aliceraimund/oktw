@@ -37,7 +37,7 @@ export default async function ColaboradoresPage() {
           </Button>
         }
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card>
           <CardContent className="p-0">
             <Table>

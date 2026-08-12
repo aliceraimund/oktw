@@ -70,7 +70,7 @@ export function VencimentosClient({ itens }: { itens: ItemEntrega[] }) {
   return (
     <div className="space-y-6">
       {/* Resumo (reflete os filtros) */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {[
           { label: 'Vencidos',           count: vencidos.length, color: 'bg-red-50 border-red-200 text-red-700' },
           { label: 'Vencem em ≤30 dias', count: atencao.length,  color: 'bg-orange-50 border-orange-200 text-orange-700' },

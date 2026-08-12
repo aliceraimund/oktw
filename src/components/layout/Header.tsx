@@ -11,12 +11,12 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, actions }: HeaderProps) {
   return (
-    <header className="border-b bg-white px-6 py-4 flex items-center justify-between">
-      <div>
+    <header className="flex flex-col gap-3 border-b bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="min-w-0">
         <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
         {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {actions}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-4 w-4" />

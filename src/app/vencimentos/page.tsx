@@ -27,7 +27,7 @@ export default async function VencimentosPage() {
         title="Controle de vencimentos"
         subtitle={`${vencidos} vencidos · ${atencao} com atenção · ${ok} em dia`}
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <VencimentosClient itens={itens} />
       </div>
     </div>
