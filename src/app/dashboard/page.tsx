@@ -5,7 +5,7 @@ import { EpiStatusBadge } from '@/components/EpiStatusBadge'
 import { EnviarAssinatura } from '@/components/EnviarAssinatura'
 import { LembreteVencimentoWhatsApp } from '@/components/LembreteVencimentoWhatsApp'
 import { diasParaVencer, formatDateBR, formatCA } from '@/lib/utils'
-import { Users, HardHat, AlertTriangle, Clock, FileSignature } from 'lucide-react'
+import { Users, AlertTriangle, Clock, FileSignature } from 'lucide-react'
 import Link from 'next/link'
 import type { ItemEntrega, FichaEntrega } from '@/types/database'
 

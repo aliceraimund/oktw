@@ -1,32 +1,40 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu, X, HardHat } from 'lucide-react'
+import { Menu, X, ChevronLeft } from 'lucide-react'
 import { Sidebar } from './Sidebar'
+import { Logo } from './Logo'
 
 /**
  * Casca responsiva da área administrativa.
- * - Desktop (md+): barra lateral fixa visível.
+ * - Desktop (md+): barra lateral fixa, com botão para recolher/expandir.
  * - Mobile: barra escondida; topo com botão hambúrguer que abre uma gaveta.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false)          // gaveta mobile
+  const [collapsed, setCollapsed] = useState(false) // recolhida no desktop
 
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* Barra lateral — desktop */}
-      <div className="hidden md:block shrink-0">
-        <Sidebar />
-      </div>
+      {!collapsed && (
+        <div className="hidden md:block shrink-0 relative">
+          <Sidebar />
+          <button
+            onClick={() => setCollapsed(true)}
+            aria-label="Recolher menu"
+            title="Recolher menu"
+            className="absolute top-3 right-2 text-slate-400 hover:text-white p-1"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {/* Gaveta — mobile */}
       {open && (
         <div className="md:hidden">
-          <div
-            className="fixed inset-0 z-40 bg-black/50"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
+          <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)} aria-hidden />
           <div className="fixed inset-y-0 left-0 z-50 w-64 max-w-[80%] shadow-xl">
             <button
               onClick={() => setOpen(false)}
@@ -47,11 +55,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button onClick={() => setOpen(true)} aria-label="Abrir menu" className="p-1 -ml-1">
             <Menu className="h-6 w-6" />
           </button>
-          <div className="flex items-center gap-2">
-            <HardHat className="h-5 w-5 text-amber-400" />
-            <span className="font-bold">OKTW</span>
+          <div className="bg-white rounded-md px-2 py-1 flex items-center">
+            <Logo className="h-6 w-auto" />
           </div>
         </header>
+
+        {/* Barra fina no desktop quando o menu está recolhido */}
+        {collapsed && (
+          <header className="hidden md:flex sticky top-0 z-30 items-center gap-3 bg-slate-900 text-white px-4 h-12">
+            <button
+              onClick={() => setCollapsed(false)}
+              aria-label="Expandir menu"
+              title="Expandir menu"
+              className="flex items-center gap-2 hover:text-amber-300"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="text-sm font-medium">Menu</span>
+            </button>
+            <div className="bg-white rounded-md px-2 py-1 flex items-center ml-1">
+              <Logo className="h-5 w-auto" />
+            </div>
+          </header>
+        )}
 
         <main className="flex-1 overflow-auto">{children}</main>
       </div>

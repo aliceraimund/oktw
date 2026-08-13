@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { HardHat, CheckCircle2, Loader2, XCircle, MapPin, AlertTriangle } from 'lucide-react'
+import { CheckCircle2, Loader2, XCircle, MapPin, AlertTriangle } from 'lucide-react'
+import { Logo } from '@/components/layout/Logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SignatureCanvas, type SignatureCanvasHandle } from '@/components/SignatureCanvas'
@@ -173,13 +174,8 @@ export default function AssinarPage() {
 
         {/* Cabeçalho */}
         <div className="flex items-center gap-3 mb-2">
-          <div className="bg-slate-900 rounded-xl p-2.5">
-            <HardHat className="h-6 w-6 text-amber-400" />
-          </div>
-          <div>
-            <p className="font-bold text-slate-900">OKTW</p>
-            <p className="text-slate-500 text-xs">{ehDevolucao ? 'Confirmação de devolução de EPIs' : 'Confirmação de recebimento de EPIs'}</p>
-          </div>
+          <Logo className="h-12 w-auto" />
+          <p className="text-slate-500 text-xs">{ehDevolucao ? 'Confirmação de devolução de EPIs' : 'Confirmação de recebimento de EPIs'}</p>
         </div>
 
         {/* Colaborador */}
@@ -365,9 +361,7 @@ export default function AssinarPage() {
 function LayoutCentrado({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="bg-slate-900 rounded-xl p-3 mb-6">
-        <HardHat className="h-7 w-7 text-amber-400" />
-      </div>
+      <Logo className="h-16 w-auto mb-6" />
       {children}
     </div>
   )

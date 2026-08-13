@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { Logo } from './Logo'
 
 const navItems = [
   { href: '/dashboard',      label: 'Dashboard',       icon: LayoutDashboard },
@@ -38,14 +39,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-slate-700">
-        <div className="flex items-center gap-2">
-          <HardHat className="h-7 w-7 text-amber-400" />
-          <div>
-            <p className="font-bold text-lg leading-none">OKTW</p>
-            <p className="text-slate-400 text-xs">Gestão de EPIs</p>
-          </div>
+      <div className="p-4 border-b border-slate-700 space-y-2">
+        <div className="bg-white rounded-lg p-3 flex items-center justify-center">
+          <Logo className="h-14 w-auto" />
         </div>
+        <p className="text-slate-400 text-xs text-center">Gestão de EPIs</p>
       </div>
 
       {/* Nav principal */}
