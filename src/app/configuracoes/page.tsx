@@ -1,9 +1,11 @@
 import { createAdminClient } from '@/lib/supabase-server'
+import { carregarConfigPdf } from '@/lib/pdf-config-server'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { ConfigPdfEditor } from '@/components/ConfigPdfEditor'
 import type { Profile } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -17,9 +19,9 @@ const roleLabel: Record<string, string> = {
 export default async function ConfiguracoesPage() {
   const supabase = createAdminClient()
 
-  const [{ data: config }, { data: usuarios }] = await Promise.all([
-    supabase.from('configuracoes').select('*').eq('id', 1).single(),
+  const [{ data: usuarios }, configPdf] = await Promise.all([
     supabase.from('profiles').select('*').order('nome'),
+    carregarConfigPdf(),
   ])
 
   const usuariosTyped = (usuarios as Profile[]) || []
@@ -27,32 +29,11 @@ export default async function ConfiguracoesPage() {
 
   return (
     <div>
-      <Header title="Configurações" subtitle="Dados da empresa e acessos ao sistema" />
+      <Header title="Configurações" subtitle="Modelo do documento e acessos ao sistema" />
       <div className="p-6 space-y-6">
 
-        {/* Dados da empresa */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="h-4 w-4" /> Dados da empresa
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="text-muted-foreground mb-1">Razão social</p>
-                <p className="font-medium text-base">{config?.empresa_nome}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">CNPJ</p>
-                <p className="font-medium text-base">{config?.empresa_cnpj}</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              Esses dados aparecem no Termo de Responsabilidade de todas as fichas assinadas.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Editor do modelo de PDF */}
+        <ConfigPdfEditor inicial={configPdf} />
 
         {/* Usuários com acesso ao sistema */}
         <Card>
