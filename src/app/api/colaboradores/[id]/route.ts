@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase-server'
+import { exigirPerfil } from '@/lib/auth'
 
 // PATCH — atualiza dados do colaborador
 export async function PATCH(
@@ -24,11 +25,14 @@ export async function PATCH(
   return NextResponse.json({ ok: true })
 }
 
-// DELETE — exclui colaborador, ou desativa se tiver fichas vinculadas
+// DELETE — exclui colaborador, ou desativa se tiver fichas vinculadas (somente Admin)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await exigirPerfil(['rh'])
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const { id } = await params
   const supabase = createAdminClient()
 
