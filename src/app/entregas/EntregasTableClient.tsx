@@ -73,7 +73,7 @@ export function EntregasTableClient({ fichas }: { fichas: FichaEntrega[] }) {
               <TableCell className="font-medium">{ficha.colaborador?.nome}</TableCell>
               <TableCell>
                 <Badge variant={ficha.tipo === 'retirada' ? 'outline' : 'secondary'}>
-                  {ficha.tipo === 'retirada' ? 'Retirada' : 'Entrega'}
+                  {ficha.tipo === 'retirada' ? 'Devolução' : 'Entrega'}
                 </Badge>
               </TableCell>
               <TableCell>{formatDateBR(ficha.data_entrega)}</TableCell>

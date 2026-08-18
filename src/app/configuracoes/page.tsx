@@ -42,8 +42,10 @@ export default async function ConfiguracoesPage() {
     carregarConfigPdf(),
   ])
 
-  const usuariosTyped = (usuarios as Profile[]) || []
-  const sistemicos = usuariosTyped.filter((u) => u.role !== 'colaborador')
+  const ordem: Record<string, number> = { rh: 0, gestor: 1, colaborador: 2 }
+  const sistemicos = ((usuarios as Profile[]) || [])
+    .slice()
+    .sort((a, b) => (ordem[a.role] ?? 9) - (ordem[b.role] ?? 9) || a.nome.localeCompare(b.nome, 'pt-BR'))
 
   return (
     <div>

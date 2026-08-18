@@ -238,7 +238,7 @@ export async function gerarRelatorioColaboradorPDF(
     p.drawText('Sistema OKTW EPI Manager — Conforme NR-6 item 6.5.1 / Lei 14.063/2020', {
       x: margin, y: 40, size: 6.5, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
     })
-    p.drawText(`Gerado em ${new Date().toLocaleString('pt-BR')}`, {
+    p.drawText(`Gerado em ${formatDateTimeBR(new Date().toISOString())}`, {
       x: margin, y: 28, size: 6, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
     })
   }
@@ -247,7 +247,7 @@ export async function gerarRelatorioColaboradorPDF(
   let y = H - 110
 
   // Título
-  page.drawText('HISTÓRICO DE ENTREGAS DE EPI', {
+  page.drawText('HISTÓRICO DE FICHAS DE EPI', {
     x: margin, y, size: 11, font: fontBold, color: rgb(0.06, 0.09, 0.16),
   })
   y -= 6
@@ -302,7 +302,7 @@ export async function gerarRelatorioColaboradorPDF(
   page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
   y -= 16
 
-  page.drawText('FICHAS DE ENTREGA', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  page.drawText('FICHAS', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 16
 
   const cols = { nome: margin + 10, ca: margin + 215, qtd: margin + 310, venc: margin + 368 }
@@ -318,7 +318,7 @@ export async function gerarRelatorioColaboradorPDF(
     }
 
     // Barra de cabeçalho da ficha
-    const tipoLabel = ficha.tipo === 'retirada' ? 'RETIRADA' : 'ENTREGA'
+    const tipoLabel = ficha.tipo === 'retirada' ? 'DEVOLUÇÃO' : 'ENTREGA'
     page.drawRectangle({
       x: margin - 4, y: y - 4, width: W - margin * 2 + 8, height: 18,
       color: rgb(0.93, 0.95, 0.98),

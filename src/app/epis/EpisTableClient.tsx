@@ -16,6 +16,7 @@ import type { Epi } from '@/types/database'
 
 export function EpisTableClient({ epis }: { epis: Epi[] }) {
   const router = useRouter()
+  const hoje = new Date().toISOString().slice(0, 10)
   const [target, setTarget] = useState<Epi | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,7 +55,14 @@ export function EpisTableClient({ epis }: { epis: Epi[] }) {
               <TableCell className="font-medium">{epi.nome}</TableCell>
               <TableCell className="font-mono text-sm">{formatCA(epi.ca)}</TableCell>
               <TableCell className="text-muted-foreground">
-                {epi.validade_ca ? formatDateBR(epi.validade_ca) : '—'}
+                {epi.validade_ca ? (
+                  <span className="inline-flex items-center gap-2">
+                    {formatDateBR(epi.validade_ca)}
+                    {epi.validade_ca < hoje && (
+                      <Badge variant="destructive" className="text-[10px]">CA vencido</Badge>
+                    )}
+                  </span>
+                ) : '—'}
               </TableCell>
               <TableCell className="text-muted-foreground">{epi.validade_dias} dias</TableCell>
               <TableCell>

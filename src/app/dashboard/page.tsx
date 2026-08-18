@@ -50,7 +50,13 @@ export default async function DashboardPage() {
     else atual.total += 1 // já ordenado desc, então o primeiro visto é o mais recente
   }
 
-  const itensAssinados = ((itens as ItemEntrega[]) || []).filter((i) => i.ficha?.assinado)
+  const todosItens = (itens as ItemEntrega[]) || []
+  const devolvidosDash = new Set(
+    todosItens.filter((i) => i.ficha?.tipo === 'retirada').map((i) => i.item_origem_id).filter(Boolean)
+  )
+  const itensAssinados = todosItens.filter(
+    (i) => i.ficha?.assinado && i.ficha?.tipo === 'entrega' && !devolvidosDash.has(i.id)
+  )
 
   const vencidos = itensAssinados.filter((i) => diasParaVencer(i.data_vencimento) < 0)
   const atencao  = itensAssinados.filter((i) => {
