@@ -56,10 +56,9 @@ export function Sidebar({
               onClick={onCollapse ?? onClose}
               aria-label={onCollapse ? 'Recolher menu' : 'Fechar menu'}
               title={onCollapse ? 'Recolher menu' : 'Fechar menu'}
-              className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-medium rounded-md px-2 py-1 hover:bg-slate-800 transition-colors"
+              className="text-slate-200 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-md p-1.5 transition-colors"
             >
-              {onCollapse ? <PanelLeftClose className="h-4 w-4" /> : <X className="h-4 w-4" />}
-              <span>{onCollapse ? 'Recolher' : 'Fechar'}</span>
+              {onCollapse ? <PanelLeftClose className="h-5 w-5" /> : <X className="h-5 w-5" />}
             </button>
           </div>
         )}
