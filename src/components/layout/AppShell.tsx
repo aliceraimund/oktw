@@ -16,10 +16,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false) // recolhida no desktop
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Barra lateral — desktop */}
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+      {/* Barra lateral — desktop (fixa; não rola com o conteúdo) */}
       {!collapsed && (
-        <div className="hidden md:block shrink-0">
+        <div className="hidden md:block shrink-0 h-screen">
           <Sidebar onCollapse={() => setCollapsed(true)} />
         </div>
       )}

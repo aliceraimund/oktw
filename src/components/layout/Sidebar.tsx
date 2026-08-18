@@ -47,7 +47,7 @@ export function Sidebar({
   }
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col">
+    <aside className="w-64 h-full bg-slate-900 text-white flex flex-col">
       {/* Cabeçalho: controle (recolher/fechar) + logo */}
       <div className="p-4 border-b border-slate-700 space-y-2">
         {(onCollapse || onClose) && (
@@ -69,7 +69,7 @@ export function Sidebar({
       </div>
 
       {/* Nav principal */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
         {navItems.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}

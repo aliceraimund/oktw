@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EpiStatusBadge } from '@/components/EpiStatusBadge'
 import { LembreteVencimentoWhatsApp } from '@/components/LembreteVencimentoWhatsApp'
 import { formatDateBR, diasParaVencer, formatCA } from '@/lib/utils'
 import type { ItemEntrega } from '@/types/database'
 
-const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm'
+const TODOS = '__todos__'
 
 export function VencimentosClient({ itens }: { itens: ItemEntrega[] }) {
   const [colaborador, setColaborador] = useState('')
@@ -89,26 +89,35 @@ export function VencimentosClient({ itens }: { itens: ItemEntrega[] }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Colaborador</Label>
-              <select className={selectClass} value={colaborador} onChange={(e) => setColaborador(e.target.value)}>
-                <option value="">Todos</option>
-                {colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
+              <Select value={colaborador || TODOS} onValueChange={(v) => setColaborador(v === TODOS ? '' : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODOS}>Todos</SelectItem>
+                  {colaboradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Setor</Label>
-              <select className={selectClass} value={setor} onChange={(e) => setSetor(e.target.value)}>
-                <option value="">Todos</option>
-                {setores.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Select value={setor || TODOS} onValueChange={(v) => setSetor(v === TODOS ? '' : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODOS}>Todos</SelectItem>
+                  {setores.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Status</Label>
-              <select className={selectClass} value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="">Todos</option>
-                <option value="vencido">Vencidos</option>
-                <option value="atencao">Vencem em ≤30 dias</option>
-                <option value="ok">Em dia</option>
-              </select>
+              <Select value={status || TODOS} onValueChange={(v) => setStatus(v === TODOS ? '' : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODOS}>Todos</SelectItem>
+                  <SelectItem value="vencido">Vencidos</SelectItem>
+                  <SelectItem value="atencao">Vencem em ≤30 dias</SelectItem>
+                  <SelectItem value="ok">Em dia</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Vencimento de</Label>

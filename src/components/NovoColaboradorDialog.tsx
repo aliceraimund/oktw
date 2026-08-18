@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SetorInput } from '@/components/SetorInput'
+import { formatCPF, formatTelefone, formatCTPS } from '@/lib/utils'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
@@ -127,15 +128,18 @@ export function NovoColaboradorDialog({ onCreated }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label>CPF</Label>
-                <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
+                <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)}
+                  onBlur={() => update('cpf', formatCPF(form.cpf))} placeholder="Ex: 000.000.000-00" />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label>WhatsApp / Telefone</Label>
-                <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)} placeholder="Ex: (11) 99999-9999" />
+                <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)}
+                  onBlur={() => update('telefone', formatTelefone(form.telefone))} placeholder="Ex: (11) 99999-9999" />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label>CTPS (nº série / UF)</Label>
-                <Input value={form.ctps} onChange={(e) => update('ctps', e.target.value)} placeholder="Ex: 043978-00014-CE" />
+                <Input value={form.ctps} onChange={(e) => update('ctps', e.target.value)}
+                  onBlur={() => update('ctps', formatCTPS(form.ctps))} placeholder="Ex: 043978-00014-CE" />
               </div>
             </div>
 
