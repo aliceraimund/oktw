@@ -28,11 +28,15 @@ export interface Epi {
 
 // ─── Modelo v2 ────────────────────────────────────────────────
 
+export type MotivoDevolucao = 'substituicao' | 'desligamento' | 'higienizacao'
+
 export interface FichaEntrega {
   id: string
   colaborador_id: string
   data_entrega: string
   tipo: 'entrega' | 'retirada'
+  motivo: MotivoDevolucao | null
+  observacao: string | null
   registrado_por: string | null
   token_assinatura: string
   assinado: boolean

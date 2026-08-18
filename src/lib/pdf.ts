@@ -14,6 +14,12 @@ async function sha256(data: string): Promise<string> {
 }
 
 
+const MOTIVO_LABEL: Record<string, string> = {
+  substituicao: 'Substituição',
+  desligamento: 'Desligamento',
+  higienizacao: 'Higienização',
+}
+
 // ─── Ficha com múltiplos EPIs + Termo de Responsabilidade ────────────────────
 
 function wrapText(text: string, maxChars: number): string[] {
@@ -309,7 +315,7 @@ export async function gerarRelatorioColaboradorPDF(
 
   for (const ficha of fichas) {
     const nItems = ficha.itens?.length ?? 0
-    const needed = 20 + (ficha.assinado_em ? 12 : 0) + 14 + nItems * 14 + 16
+    const needed = 20 + (ficha.assinado_em ? 12 : 0) + (ficha.tipo === 'retirada' ? 12 : 0) + 14 + nItems * 14 + 16
 
     if (y - needed < 70) {
       drawFooter(page)
@@ -339,6 +345,17 @@ export async function gerarRelatorioColaboradorPDF(
       y -= 12
     }
 
+    // Motivo/observação da devolução (movimentação do ciclo de vida)
+    if (ficha.tipo === 'retirada' && (ficha.motivo || ficha.observacao)) {
+      const partes: string[] = []
+      if (ficha.motivo) partes.push(`Motivo: ${MOTIVO_LABEL[ficha.motivo] ?? ficha.motivo}`)
+      if (ficha.observacao) partes.push(`Obs.: ${ficha.observacao}`)
+      page.drawText(partes.join('   ·   ').substring(0, 115), {
+        x: margin + 10, y, size: 7, font: fontRegular, color: rgb(0.45, 0.45, 0.45),
+      })
+      y -= 12
+    }
+
     // Cabeçalho da tabela de EPIs
     page.drawText('Equipamento', { x: cols.nome, y, size: 7, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
     page.drawText('CA',          { x: cols.ca,   y, size: 7, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
@@ -363,5 +380,21 @@ export async function gerarRelatorioColaboradorPDF(
   }
 
   drawFooter(page)
+
+  // Anexa o PDF assinado de cada ficha ao final do relatório
+  for (const ficha of fichas) {
+    if (!ficha.pdf_url) continue
+    try {
+      const res = await fetch(ficha.pdf_url)
+      if (!res.ok) continue
+      const bytes = new Uint8Array(await res.arrayBuffer())
+      const anexo = await PDFDocument.load(bytes)
+      const paginas = await doc.copyPages(anexo, anexo.getPageIndices())
+      paginas.forEach((p) => doc.addPage(p))
+    } catch {
+      /* ignora anexo com erro de download/leitura */
+    }
+  }
+
   return doc.save()
 }

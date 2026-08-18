@@ -60,6 +60,8 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
   const [itensEmUso, setItensEmUso] = useState<ItemEntrega[]>([])
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [carregandoEmUso, setCarregandoEmUso] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [observacao, setObservacao] = useState('')
 
   useEffect(() => {
     if (tipo !== 'retirada' || !colaboradorId) {
@@ -172,7 +174,7 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
   }
 
   const podeEnviar = tipo === 'retirada'
-    ? Boolean(colaboradorId && selecionados.size > 0)
+    ? Boolean(colaboradorId && selecionados.size > 0 && motivo)
     : Boolean(colaboradorId && itens.every((i) => i.epi_id && i.data_vencimento))
 
   async function handleSubmit(e: React.FormEvent) {
@@ -186,7 +188,14 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
     // 1. Criar a ficha de entrega
     const { data: ficha, error: fichaError } = await supabase
       .from('fichas_entrega')
-      .insert([{ colaborador_id: colaboradorId, data_entrega: dataEntrega, tipo, registrado_por: userId }])
+      .insert([{
+        colaborador_id: colaboradorId,
+        data_entrega: dataEntrega,
+        tipo,
+        registrado_por: userId,
+        motivo: tipo === 'retirada' ? (motivo || null) : null,
+        observacao: tipo === 'retirada' ? (observacao || null) : null,
+      }])
       .select()
       .single()
 
@@ -270,6 +279,8 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
               setColaboradorId('')
               setDataEntrega(today)
               setItens([itemVazio()])
+              setMotivo('')
+              setObservacao('')
             }}>
               Nova ficha
             </Button>
@@ -473,7 +484,24 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
                 Este colaborador não tem EPIs em uso para devolver.
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Motivo da devolução *</Label>
+                    <Select value={motivo || undefined} onValueChange={setMotivo}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o motivo..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="substituicao">Substituição</SelectItem>
+                        <SelectItem value="desligamento">Desligamento</SelectItem>
+                        <SelectItem value="higienizacao">Higienização</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Observações</Label>
+                    <Input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Opcional" />
+                  </div>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Marque os EPIs que estão sendo devolvidos (a devolução pode ser parcial):
                 </p>

@@ -8,10 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EpiStatusBadge } from '@/components/EpiStatusBadge'
 import { ColaboradorActions } from './ColaboradorActions'
-import { OperacoesEpiPanel } from '@/components/OperacoesEpiPanel'
 import { Plus, FileText, FileDown } from 'lucide-react'
 import { formatDateBR, formatCA } from '@/lib/utils'
-import type { FichaEntrega, ItemEntrega, OperacaoEpi } from '@/types/database'
+import type { FichaEntrega, ItemEntrega } from '@/types/database'
+
+const motivoLabel: Record<string, string> = {
+  substituicao: 'Substituição',
+  desligamento: 'Desligamento',
+  higienizacao: 'Higienização',
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -19,23 +24,19 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = createAdminClient()
 
-  const [{ data: colaborador }, { data: fichas }, { data: operacoes }] = await Promise.all([
+  const [{ data: colaborador }, { data: fichas }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', id).single(),
     supabase
       .from('fichas_entrega')
       .select('*, itens:itens_entrega(*, epi:epis(*))')
       .eq('colaborador_id', id)
       .order('data_entrega', { ascending: false }),
-    supabase
-      .from('operacoes_epi')
-      .select('*, epi:epis(nome, ca)')
-      .eq('colaborador_id', id)
-      .order('data_operacao', { ascending: false }),
   ])
 
   if (!colaborador) notFound()
 
   const fichasTyped = (fichas as FichaEntrega[]) || []
+  const devolucoes = fichasTyped.filter((f) => f.tipo === 'retirada')
 
   // IDs de itens de entrega que já foram devolvidos (referenciados por uma devolução)
   const devolvidos = new Set(
@@ -124,12 +125,56 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
           </CardContent>
         </Card>
 
-        {/* Ciclo de vida dos EPIs */}
-        <OperacoesEpiPanel
-          colaboradorId={id}
-          fichas={fichasTyped}
-          operacoes={(operacoes as OperacaoEpi[]) ?? []}
-        />
+        {/* Ciclo de vida dos EPIs — informativo (registro é feito em Fichas de EPI) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ciclo de vida dos EPIs ({devolucoes.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {devolucoes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma devolução registrada. As movimentações são registradas em <strong>Fichas de EPI → Nova ficha → Devolução</strong>.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Motivo</TableHead>
+                    <TableHead>EPIs devolvidos</TableHead>
+                    <TableHead>Observação</TableHead>
+                    <TableHead>Assinatura</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {devolucoes.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell>{formatDateBR(f.data_entrega)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{f.motivo ? motivoLabel[f.motivo] ?? f.motivo : '—'}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {f.itens?.map((item) => (
+                            <span key={item.id} className="text-xs bg-slate-100 rounded px-1.5 py-0.5">
+                              {item.epi?.nome}
+                            </span>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{f.observacao ?? '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant={f.assinado ? 'success' : 'warning'}>
+                          {f.assinado ? 'Assinado' : 'Pendente'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Histórico de fichas */}
         <Card>
