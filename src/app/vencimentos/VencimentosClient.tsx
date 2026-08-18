@@ -180,6 +180,7 @@ export function VencimentosClient({ itens }: { itens: ItemEntrega[] }) {
                         colaborador={item.ficha?.colaborador}
                         epi={item.epi}
                         dataVencimento={item.data_vencimento}
+                        itemId={item.id}
                       />
                     )}
                   </TableCell>

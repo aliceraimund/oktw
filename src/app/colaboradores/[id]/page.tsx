@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EpiStatusBadge } from '@/components/EpiStatusBadge'
 import { ColaboradorActions } from './ColaboradorActions'
-import { Plus, FileText, FileDown } from 'lucide-react'
+import { PdfHistoricoButton } from './PdfHistoricoButton'
+import { getPerfilAtual } from '@/lib/auth'
+import { Plus, FileText } from 'lucide-react'
 import { formatDateBR, formatCA } from '@/lib/utils'
 import type { FichaEntrega, ItemEntrega } from '@/types/database'
 
@@ -24,16 +26,18 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = createAdminClient()
 
-  const [{ data: colaborador }, { data: fichas }] = await Promise.all([
+  const [{ data: colaborador }, { data: fichas }, perfil] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', id).single(),
     supabase
       .from('fichas_entrega')
       .select('*, itens:itens_entrega(*, epi:epis(*))')
       .eq('colaborador_id', id)
       .order('data_entrega', { ascending: false }),
+    getPerfilAtual(),
   ])
 
   if (!colaborador) notFound()
+  const podeExcluir = perfil === 'rh'
 
   const fichasTyped = (fichas as FichaEntrega[]) || []
   const devolucoes = fichasTyped.filter((f) => f.tipo === 'retirada')
@@ -66,12 +70,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
         subtitle={`${colaborador.cargo ?? 'Sem cargo'} · ${colaborador.setor ?? 'Sem setor'}`}
         actions={
           <div className="flex gap-2">
-            <Button asChild size="sm" variant="outline">
-              <a href={`/api/colaboradores/${id}/pdf-cumulativo`} download>
-                <FileDown className="h-4 w-4 mr-2" />
-                PDF Histórico
-              </a>
-            </Button>
+            <PdfHistoricoButton colaboradorId={id} nome={colaborador.nome} />
             <Button asChild size="sm">
               <Link href={`/entregas/nova?colaborador=${id}`}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -84,7 +83,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
       <div className="p-6 space-y-6">
 
         {/* Dados pessoais — com edição e exclusão inline */}
-        <ColaboradorActions colaborador={colaborador} />
+        <ColaboradorActions colaborador={colaborador} podeExcluir={podeExcluir} />
 
         {/* EPIs ativos */}
         <Card>

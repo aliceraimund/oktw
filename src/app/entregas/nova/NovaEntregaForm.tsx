@@ -70,23 +70,28 @@ export function NovaEntregaForm({ colaboradores: colaboradoresProp, epis: episPr
     let ativo = true
     setCarregandoEmUso(true)
     ;(async () => {
-      // EPIs entregues (fichas de entrega assinadas) do colaborador
-      const { data: entregues } = await supabase
-        .from('itens_entrega')
-        .select('*, epi:epis(*), ficha:fichas_entrega!inner(colaborador_id, assinado, tipo, data_entrega)')
-        .eq('ficha.colaborador_id', colaboradorId)
-        .eq('ficha.assinado', true)
-        .eq('ficha.tipo', 'entrega')
-      // Itens já devolvidos (origem já referenciada por alguma devolução)
-      const { data: devolvidos } = await supabase
-        .from('itens_entrega')
-        .select('item_origem_id, ficha:fichas_entrega!inner(colaborador_id)')
-        .eq('ficha.colaborador_id', colaboradorId)
-        .not('item_origem_id', 'is', null)
+      // Busca todas as fichas do colaborador e calcula os itens em uso em JS
+      // (mesma lógica de "EPIs em uso" na página do colaborador).
+      const { data: fichas } = await supabase
+        .from('fichas_entrega')
+        .select('*, itens:itens_entrega(*, epi:epis(*))')
+        .eq('colaborador_id', colaboradorId)
+      const fichasArr = (fichas as FichaEntrega[]) ?? []
+
+      // IDs de itens de entrega já referenciados por alguma devolução
       const jaDevolvidos = new Set(
-        (devolvidos ?? []).map((d: { item_origem_id: string | null }) => d.item_origem_id)
+        fichasArr
+          .filter((f) => f.tipo === 'retirada')
+          .flatMap((f) => f.itens ?? [])
+          .map((i) => i.item_origem_id)
+          .filter(Boolean)
       )
-      const emUso = ((entregues as ItemEntrega[]) ?? []).filter((i) => !jaDevolvidos.has(i.id))
+
+      const emUso: ItemEntrega[] = fichasArr
+        .filter((f) => f.assinado && f.tipo === 'entrega')
+        .flatMap((f) => (f.itens ?? []).map((i) => ({ ...i, ficha: f })))
+        .filter((i) => !jaDevolvidos.has(i.id))
+
       if (ativo) { setItensEmUso(emUso); setSelecionados(new Set()); setCarregandoEmUso(false) }
     })()
     return () => { ativo = false }

@@ -19,6 +19,7 @@ import type { Profile } from '@/types/database'
 
 interface Props {
   colaborador: Profile
+  podeExcluir?: boolean
 }
 
 const roleLabel: Record<string, string> = {
@@ -27,7 +28,7 @@ const roleLabel: Record<string, string> = {
   colaborador: 'Colaborador',
 }
 
-export function ColaboradorActions({ colaborador }: Props) {
+export function ColaboradorActions({ colaborador, podeExcluir = false }: Props) {
   const router = useRouter()
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -143,9 +144,11 @@ export function ColaboradorActions({ colaborador }: Props) {
                 </Button>
               </>
             )}
-            <Button size="sm" variant="destructive" onClick={() => setShowDelete(true)}>
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Excluir
-            </Button>
+            {podeExcluir && (
+              <Button size="sm" variant="destructive" onClick={() => setShowDelete(true)}>
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Excluir
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>

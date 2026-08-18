@@ -4,13 +4,18 @@ import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { EpisTableClient } from './EpisTableClient'
+import { getPerfilAtual } from '@/lib/auth'
 import type { Epi } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EpisPage() {
   const supabase = createAdminClient()
-  const { data: epis } = await supabase.from('epis').select('*').order('nome')
+  const [{ data: epis }, perfil] = await Promise.all([
+    supabase.from('epis').select('*').order('nome'),
+    getPerfilAtual(),
+  ])
+  const podeExcluir = perfil === 'rh'
 
   return (
     <div>
@@ -27,7 +32,7 @@ export default async function EpisPage() {
         }
       />
       <div className="p-6">
-        <EpisTableClient epis={(epis as Epi[]) ?? []} />
+        <EpisTableClient epis={(epis as Epi[]) ?? []} podeExcluir={podeExcluir} />
       </div>
     </div>
   )

@@ -19,7 +19,7 @@ import type { FichaEntrega } from '@/types/database'
 
 const PALAVRA_CONFIRMACAO = 'EXCLUIR'
 
-export function EntregasTableClient({ fichas }: { fichas: FichaEntrega[] }) {
+export function EntregasTableClient({ fichas, podeExcluir = false }: { fichas: FichaEntrega[]; podeExcluir?: boolean }) {
   const router = useRouter()
   const [target, setTarget] = useState<FichaEntrega | null>(null)
   const [palavra, setPalavra] = useState('')
@@ -111,13 +111,15 @@ export function EntregasTableClient({ fichas }: { fichas: FichaEntrega[] }) {
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </Link>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openDelete(ficha)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {podeExcluir && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openDelete(ficha)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

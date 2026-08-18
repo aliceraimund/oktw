@@ -13,12 +13,11 @@ import {
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Pencil, Trash2, Loader2, Search } from 'lucide-react'
-import { formatCA, formatDateBR } from '@/lib/utils'
+import { formatCA, formatDateBR, diasParaVencer } from '@/lib/utils'
 import type { Epi } from '@/types/database'
 
-export function EpisTableClient({ epis }: { epis: Epi[] }) {
+export function EpisTableClient({ epis, podeExcluir = false }: { epis: Epi[]; podeExcluir?: boolean }) {
   const router = useRouter()
-  const hoje = new Date().toISOString().slice(0, 10)
   const [target, setTarget] = useState<Epi | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -77,14 +76,21 @@ export function EpisTableClient({ epis }: { epis: Epi[] }) {
               <TableCell className="font-medium">{epi.nome}</TableCell>
               <TableCell className="font-mono text-sm">{formatCA(epi.ca)}</TableCell>
               <TableCell className="text-muted-foreground">
-                {epi.validade_ca ? (
-                  <span className="inline-flex items-center gap-2">
-                    {formatDateBR(epi.validade_ca)}
-                    {epi.validade_ca < hoje && (
-                      <Badge variant="destructive" className="text-[10px]">CA vencido</Badge>
-                    )}
-                  </span>
-                ) : '—'}
+                {epi.validade_ca ? (() => {
+                  const d = diasParaVencer(epi.validade_ca)
+                  return (
+                    <span className="inline-flex items-center gap-2">
+                      {formatDateBR(epi.validade_ca)}
+                      {d < 0 ? (
+                        <Badge variant="destructive" className="text-[10px]">CA vencido</Badge>
+                      ) : d <= 31 ? (
+                        <Badge className="text-[10px] bg-orange-100 text-orange-700 hover:bg-orange-100">Vence em {d}d</Badge>
+                      ) : (
+                        <Badge variant="success" className="text-[10px]">Em dia</Badge>
+                      )}
+                    </span>
+                  )
+                })() : '—'}
               </TableCell>
               <TableCell className="text-muted-foreground">{epi.validade_dias} dias</TableCell>
               <TableCell>
@@ -99,13 +105,15 @@ export function EpisTableClient({ epis }: { epis: Epi[] }) {
                       <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Link>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => { setError(null); setTarget(epi) }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {podeExcluir && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => { setError(null); setTarget(epi) }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

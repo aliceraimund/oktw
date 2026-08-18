@@ -9,21 +9,30 @@ type Props = {
   colaborador: Pick<Profile, 'nome' | 'telefone'> | undefined | null
   epi: Pick<Epi, 'nome' | 'ca'> | undefined | null
   dataVencimento: string
+  itemId?: string
   size?: 'sm' | 'icon'
 }
 
 /**
  * Botão que abre o WhatsApp (modelo grátis wa.me) com um lembrete pronto de
- * EPI vencido para troca. Fica desabilitado se o colaborador não tiver telefone.
+ * EPI vencido para troca. Registra o disparo (histórico de cobranças).
  */
-export function LembreteVencimentoWhatsApp({ colaborador, epi, dataVencimento, size = 'sm' }: Props) {
+export function LembreteVencimentoWhatsApp({ colaborador, epi, dataVencimento, itemId, size = 'sm' }: Props) {
   const link =
     colaborador && epi
       ? linkVencimentoWhatsApp(colaborador, epi, dataVencimento)
       : null
 
   function abrir() {
-    if (link) window.open(link, '_blank', 'noopener,noreferrer')
+    if (!link) return
+    window.open(link, '_blank', 'noopener,noreferrer')
+    if (itemId) {
+      fetch('/api/disparos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, canal: 'whatsapp', tipo: 'vencimento' }),
+      }).catch(() => {})
+    }
   }
 
   if (size === 'icon') {

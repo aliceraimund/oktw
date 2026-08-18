@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Plus } from 'lucide-react'
 import { EntregasTableClient } from './EntregasTableClient'
+import { getPerfilAtual } from '@/lib/auth'
 import type { FichaEntrega } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -12,10 +13,14 @@ export const dynamic = 'force-dynamic'
 export default async function EntregasPage() {
   const supabase = createAdminClient()
 
-  const { data: fichas } = await supabase
-    .from('fichas_entrega')
-    .select('*, colaborador:profiles!fichas_entrega_colaborador_id_fkey(*), itens:itens_entrega(*, epi:epis(*))')
-    .order('created_at', { ascending: false })
+  const [{ data: fichas }, perfil] = await Promise.all([
+    supabase
+      .from('fichas_entrega')
+      .select('*, colaborador:profiles!fichas_entrega_colaborador_id_fkey(*), itens:itens_entrega(*, epi:epis(*))')
+      .order('created_at', { ascending: false }),
+    getPerfilAtual(),
+  ])
+  const podeExcluir = perfil === 'rh'
 
   return (
     <div>
@@ -34,7 +39,7 @@ export default async function EntregasPage() {
       <div className="p-6">
         <Card>
           <CardContent className="p-0">
-            <EntregasTableClient fichas={(fichas as FichaEntrega[]) ?? []} />
+            <EntregasTableClient fichas={(fichas as FichaEntrega[]) ?? []} podeExcluir={podeExcluir} />
           </CardContent>
         </Card>
       </div>

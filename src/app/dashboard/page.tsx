@@ -34,20 +34,25 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('disparos')
-      .select('ficha_id, canal, created_at')
-      .eq('tipo', 'assinatura')
+      .select('ficha_id, item_id, tipo, canal, created_at')
       .order('created_at', { ascending: false }),
   ])
 
   const fichasPendentes = (pendentes as FichaEntrega[]) ?? []
 
-  // Agrupa disparos por ficha: total + último acionamento
+  // Agrupa disparos: por ficha (assinatura) e por item (vencimento)
   const disparosPorFicha = new Map<string, { total: number; canal: string; em: string }>()
-  for (const d of (disparos as { ficha_id: string | null; canal: string; created_at: string }[]) ?? []) {
-    if (!d.ficha_id) continue
-    const atual = disparosPorFicha.get(d.ficha_id)
-    if (!atual) disparosPorFicha.set(d.ficha_id, { total: 1, canal: d.canal, em: d.created_at })
-    else atual.total += 1 // já ordenado desc, então o primeiro visto é o mais recente
+  const disparosPorItem = new Map<string, { total: number; canal: string; em: string }>()
+  for (const d of (disparos as { ficha_id: string | null; item_id: string | null; tipo: string; canal: string; created_at: string }[]) ?? []) {
+    if (d.tipo === 'assinatura' && d.ficha_id) {
+      const atual = disparosPorFicha.get(d.ficha_id)
+      if (!atual) disparosPorFicha.set(d.ficha_id, { total: 1, canal: d.canal, em: d.created_at })
+      else atual.total += 1
+    } else if (d.tipo === 'vencimento' && d.item_id) {
+      const atual = disparosPorItem.get(d.item_id)
+      if (!atual) disparosPorItem.set(d.item_id, { total: 1, canal: d.canal, em: d.created_at })
+      else atual.total += 1
+    }
   }
 
   const todosItens = (itens as ItemEntrega[]) || []
@@ -175,6 +180,12 @@ export default async function DashboardPage() {
                         </Link>
                       </p>
                       <p className="text-xs text-muted-foreground">{item.epi?.nome} · {formatCA(item.epi?.ca)}</p>
+                      {(() => {
+                        const d = disparosPorItem.get(item.id)
+                        return d ? (
+                          <p className="text-xs text-green-700 mt-0.5">Lembrete já enviado {d.total}× · último em {formatDateBR(d.em)}</p>
+                        ) : null
+                      })()}
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">{formatDateBR(item.data_vencimento)}</span>
@@ -184,6 +195,7 @@ export default async function DashboardPage() {
                           colaborador={item.ficha?.colaborador}
                           epi={item.epi}
                           dataVencimento={item.data_vencimento}
+                          itemId={item.id}
                           size="icon"
                         />
                       )}
