@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_ROUTES = ['/login', '/entregas']
+const PUBLIC_ROUTES = ['/login']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -42,6 +42,18 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Colaborador tem acesso restrito: só ao próprio painel.
+  const { data: perfil } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const ehColaborador = perfil?.role === 'colaborador'
+
+  if (ehColaborador && !pathname.startsWith('/meu-painel')) {
+    return NextResponse.redirect(new URL('/meu-painel', request.url))
+  }
+  if (!ehColaborador && pathname.startsWith('/meu-painel')) {
+    // Admin/Gestor não usam o painel do colaborador
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
