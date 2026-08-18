@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu, X, ChevronLeft } from 'lucide-react'
+import { Menu, PanelLeftOpen } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { Logo } from './Logo'
 
 /**
  * Casca responsiva da área administrativa.
- * - Desktop (md+): barra lateral fixa, com botão para recolher/expandir.
- * - Mobile: barra escondida; topo com botão hambúrguer que abre uma gaveta.
+ * - Desktop (md+): barra lateral fixa, com botão "Recolher" para esconder e
+ *   uma barra fina com "Menu" para trazer de volta.
+ * - Mobile: barra escondida; topo com hambúrguer que abre uma gaveta.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)          // gaveta mobile
@@ -18,16 +19,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-slate-50">
       {/* Barra lateral — desktop */}
       {!collapsed && (
-        <div className="hidden md:block shrink-0 relative">
-          <Sidebar />
-          <button
-            onClick={() => setCollapsed(true)}
-            aria-label="Recolher menu"
-            title="Recolher menu"
-            className="absolute top-3 right-2 text-slate-400 hover:text-white p-1"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
+        <div className="hidden md:block shrink-0">
+          <Sidebar onCollapse={() => setCollapsed(true)} />
         </div>
       )}
 
@@ -36,14 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="md:hidden">
           <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)} aria-hidden />
           <div className="fixed inset-y-0 left-0 z-50 w-64 max-w-[80%] shadow-xl">
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Fechar menu"
-              className="absolute top-4 right-3 z-10 text-slate-400 hover:text-white"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <Sidebar onNavigate={() => setOpen(false)} />
+            <Sidebar onNavigate={() => setOpen(false)} onClose={() => setOpen(false)} />
           </div>
         </div>
       )}
@@ -62,17 +48,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Barra fina no desktop quando o menu está recolhido */}
         {collapsed && (
-          <header className="hidden md:flex sticky top-0 z-30 items-center gap-3 bg-slate-900 text-white px-4 h-12">
+          <header className="hidden md:flex sticky top-0 z-30 items-center gap-3 bg-slate-900 text-white px-3 h-12">
             <button
               onClick={() => setCollapsed(false)}
               aria-label="Expandir menu"
               title="Expandir menu"
-              className="flex items-center gap-2 hover:text-amber-300"
+              className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-800 transition-colors"
             >
-              <Menu className="h-5 w-5" />
+              <PanelLeftOpen className="h-5 w-5" />
               <span className="text-sm font-medium">Menu</span>
             </button>
-            <div className="bg-white rounded-md px-2 py-1 flex items-center ml-1">
+            <div className="bg-white rounded-md px-2 py-1 flex items-center">
               <Logo className="h-5 w-auto" />
             </div>
           </header>

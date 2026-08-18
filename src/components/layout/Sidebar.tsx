@@ -10,6 +10,8 @@ import {
   Clock,
   Settings,
   LogOut,
+  PanelLeftClose,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase'
@@ -24,7 +26,15 @@ const navItems = [
   { href: '/vencimentos',    label: 'Vencimentos',      icon: Clock },
 ]
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({
+  onNavigate,
+  onCollapse,
+  onClose,
+}: {
+  onNavigate?: () => void
+  onCollapse?: () => void
+  onClose?: () => void
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -38,8 +48,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col">
-      {/* Logo */}
+      {/* Cabeçalho: controle (recolher/fechar) + logo */}
       <div className="p-4 border-b border-slate-700 space-y-2">
+        {(onCollapse || onClose) && (
+          <div className="flex justify-end">
+            <button
+              onClick={onCollapse ?? onClose}
+              aria-label={onCollapse ? 'Recolher menu' : 'Fechar menu'}
+              title={onCollapse ? 'Recolher menu' : 'Fechar menu'}
+              className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs font-medium rounded-md px-2 py-1 hover:bg-slate-800 transition-colors"
+            >
+              {onCollapse ? <PanelLeftClose className="h-4 w-4" /> : <X className="h-4 w-4" />}
+              <span>{onCollapse ? 'Recolher' : 'Fechar'}</span>
+            </button>
+          </div>
+        )}
         <div className="bg-white rounded-lg p-3 flex items-center justify-center">
           <Logo className="h-14 w-auto" />
         </div>
