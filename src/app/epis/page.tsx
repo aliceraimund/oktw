@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase-server'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Plus } from 'lucide-react'
 import { EpisTableClient } from './EpisTableClient'
 import type { Epi } from '@/types/database'
@@ -28,11 +27,7 @@ export default async function EpisPage() {
         }
       />
       <div className="p-6">
-        <Card>
-          <CardContent className="p-0">
-            <EpisTableClient epis={(epis as Epi[]) ?? []} />
-          </CardContent>
-        </Card>
+        <EpisTableClient epis={(epis as Epi[]) ?? []} />
       </div>
     </div>
   )

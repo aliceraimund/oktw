@@ -185,7 +185,7 @@ export async function gerarFichaEntregaPDFv2(
   y -= 13
 
   page.drawText(
-    `Assinado em: ${ficha.assinado_em ? formatDateTimeBR(ficha.assinado_em) : new Date().toLocaleString('pt-BR')}`,
+    `Assinado em: ${formatDateTimeBR(ficha.assinado_em ?? new Date().toISOString())}`,
     { x: margin, y, size: 8, font: fontRegular }
   )
   y -= 12
