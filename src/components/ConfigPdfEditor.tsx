@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { FileText, Plus, Trash2, Loader2, Check, RotateCcw, AlertTriangle } from 'lucide-react'
+import { FileText, Plus, Trash2, Loader2, Check, RotateCcw, AlertTriangle, ChevronDown } from 'lucide-react'
 import { DEFAULT_CONFIG_PDF, type ConfigPdf, type CamposPdf } from '@/lib/pdf-config'
 
 const CAMPOS: [keyof CamposPdf, string][] = [
@@ -27,6 +27,7 @@ export function ConfigPdfEditor({ inicial }: { inicial: ConfigPdf }) {
   const [salvando, setSalvando] = useState(false)
   const [ok, setOk] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [aberto, setAberto] = useState(false)
 
   function restaurarPadrao() {
     if (!confirm('Restaurar o texto e os campos para o padrão original? As alterações não salvas serão perdidas.')) return
@@ -57,12 +58,21 @@ export function ConfigPdfEditor({ inicial }: { inicial: ConfigPdf }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setAberto((a) => !a)}
+        className="w-full flex items-center justify-between p-6 text-left"
+      >
+        <span className="text-base font-semibold flex items-center gap-2">
           <FileText className="h-4 w-4" /> Modelo do documento (PDF)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </span>
+        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+          {aberto ? 'Recolher' : 'Editar modelo'}
+          <ChevronDown className={`h-4 w-4 transition-transform ${aberto ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+      {aberto && (
+      <CardContent className="space-y-6 pt-0">
         {/* Aviso jurídico */}
         <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -149,6 +159,7 @@ export function ConfigPdfEditor({ inicial }: { inicial: ConfigPdf }) {
           </Button>
         </div>
       </CardContent>
+      )}
     </Card>
   )
 }
