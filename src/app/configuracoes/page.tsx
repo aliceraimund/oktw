@@ -10,14 +10,14 @@ import type { Profile } from '@/types/database'
 
 const PERFIS = [
   {
-    nome: 'RH / Segurança',
+    nome: 'Admin',
     cor: 'bg-blue-50 border-blue-200',
     desc: 'Acesso completo. Cadastra e edita colaboradores, cria e redefine senhas de acesso, gerencia o catálogo de EPIs, registra fichas (entrega e devolução), controla vencimentos e edita as Configurações e o modelo do documento (PDF).',
   },
   {
     nome: 'Gestor',
     cor: 'bg-violet-50 border-violet-200',
-    desc: 'Acesso operacional. Acompanha e registra entregas e devoluções, gerencia EPIs e colaboradores, acompanha vencimentos e envia cobranças por e-mail/WhatsApp. Não cria acessos nem redefine senhas — essas ações são exclusivas do RH / Segurança.',
+    desc: 'Acesso operacional. Acompanha e registra entregas e devoluções, gerencia EPIs e colaboradores, acompanha vencimentos e envia cobranças por e-mail/WhatsApp. Não cria acessos nem redefine senhas — essas ações são exclusivas do Admin.',
   },
   {
     nome: 'Colaborador',
@@ -29,7 +29,7 @@ const PERFIS = [
 export const dynamic = 'force-dynamic'
 
 const roleLabel: Record<string, string> = {
-  rh: 'RH / Segurança',
+  rh: 'Admin',
   gestor: 'Gestor',
   colaborador: 'Colaborador',
 }

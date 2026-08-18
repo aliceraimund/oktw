@@ -53,7 +53,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
     .filter((i) => !devolvidos.has(i.id))
 
   const roleLabel: Record<string, string> = {
-    rh: 'RH / Segurança',
+    rh: 'Admin',
     gestor: 'Gestor',
     colaborador: 'Colaborador',
   }

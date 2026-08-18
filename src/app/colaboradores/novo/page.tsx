@@ -89,7 +89,7 @@ export default function NovoColaboradorPage() {
                     <SelectContent>
                       <SelectItem value="colaborador">Colaborador</SelectItem>
                       <SelectItem value="gestor">Gestor</SelectItem>
-                      <SelectItem value="rh">RH / Segurança</SelectItem>
+                      <SelectItem value="rh">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

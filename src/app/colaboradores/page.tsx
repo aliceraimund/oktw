@@ -11,7 +11,7 @@ import type { Profile } from '@/types/database'
 export const dynamic = 'force-dynamic'
 
 const roleLabel: Record<string, string> = {
-  rh: 'RH / Segurança',
+  rh: 'Admin',
   gestor: 'Gestor',
   colaborador: 'Colaborador',
 }

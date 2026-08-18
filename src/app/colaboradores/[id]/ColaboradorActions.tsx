@@ -22,7 +22,7 @@ interface Props {
 }
 
 const roleLabel: Record<string, string> = {
-  rh: 'RH / Segurança',
+  rh: 'Admin',
   gestor: 'Gestor',
   colaborador: 'Colaborador',
 }
@@ -225,7 +225,7 @@ export function ColaboradorActions({ colaborador }: Props) {
                     <SelectContent>
                       <SelectItem value="colaborador">Colaborador</SelectItem>
                       <SelectItem value="gestor">Gestor</SelectItem>
-                      <SelectItem value="rh">RH / Segurança</SelectItem>
+                      <SelectItem value="rh">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
