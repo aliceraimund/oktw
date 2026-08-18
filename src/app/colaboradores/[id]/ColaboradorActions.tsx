@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SetorInput } from '@/components/SetorInput'
-import { AlertTriangle, Loader2, Pencil, Trash2, User } from 'lucide-react'
+import { AlertTriangle, Loader2, Pencil, Trash2, User, KeyRound, Check } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { formatCPF, formatTelefone, formatCTPS } from '@/lib/utils'
 import type { Profile } from '@/types/database'
@@ -34,6 +34,28 @@ export function ColaboradorActions({ colaborador }: Props) {
   const [deleting, setDeleting] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Redefinição de senha
+  const [showSenha, setShowSenha] = useState(false)
+  const [novaSenha, setNovaSenha] = useState('')
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
+  const [senhaOk, setSenhaOk] = useState(false)
+  const [senhaErro, setSenhaErro] = useState<string | null>(null)
+
+  async function handleRedefinirSenha() {
+    setSalvandoSenha(true)
+    setSenhaErro(null)
+    const res = await fetch(`/api/colaboradores/${colaborador.id}/senha`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha: novaSenha }),
+    })
+    const json = await res.json()
+    if (!res.ok) { setSenhaErro(json.error || 'Erro ao redefinir senha.'); setSalvandoSenha(false); return }
+    setSalvandoSenha(false)
+    setSenhaOk(true)
+    setTimeout(() => { setShowSenha(false); setSenhaOk(false); setNovaSenha('') }, 1500)
+  }
 
   const [form, setForm] = useState({
     nome: colaborador.nome,
@@ -112,9 +134,14 @@ export function ColaboradorActions({ colaborador }: Props) {
           </CardTitle>
           <div className="flex gap-2">
             {!editMode && (
-              <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
-              </Button>
+              <>
+                <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setSenhaErro(null); setNovaSenha(''); setShowSenha(true) }}>
+                  <KeyRound className="h-3.5 w-3.5 mr-1.5" /> Redefinir senha
+                </Button>
+              </>
             )}
             <Button size="sm" variant="destructive" onClick={() => setShowDelete(true)}>
               <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Excluir
@@ -288,6 +315,51 @@ export function ColaboradorActions({ colaborador }: Props) {
                 <Button variant="destructive" onClick={handleDesativar} disabled={deleting}>
                   {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Desativar colaborador
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de redefinição de senha */}
+      <Dialog open={showSenha} onOpenChange={(o) => { if (!o) setShowSenha(false) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir senha de acesso</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para <strong>{colaborador.nome}</strong> acessar o sistema
+              (e-mail {colaborador.email}).
+            </DialogDescription>
+          </DialogHeader>
+
+          {senhaOk ? (
+            <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-3 text-sm">
+              <Check className="h-4 w-4" /> Senha redefinida com sucesso.
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2 pt-1">
+                <Label>Nova senha</Label>
+                <Input
+                  type="text"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  autoComplete="new-password"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe a nova senha ao colaborador. Ele poderá usá-la no próximo login.
+                </p>
+              </div>
+              {senhaErro && <p className="text-sm text-destructive bg-red-50 p-3 rounded-md">{senhaErro}</p>}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSenha(false)} disabled={salvandoSenha}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleRedefinirSenha} disabled={salvandoSenha || novaSenha.length < 6}>
+                  {salvandoSenha && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Salvar nova senha
                 </Button>
               </DialogFooter>
             </>
