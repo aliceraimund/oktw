@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ const roleLabel: Record<string, string> = {
 }
 
 export function ColaboradoresTableClient({ colaboradores }: { colaboradores: Profile[] }) {
+  const router = useRouter()
   const [busca, setBusca] = useState('')
 
   const filtrados = useMemo(() => {
@@ -62,10 +63,12 @@ export function ColaboradoresTableClient({ colaboradores }: { colaboradores: Pro
                 </TableCell>
               </TableRow>
             ) : filtrados.map((c) => (
-              <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell className="font-medium">
-                  <Link href={`/colaboradores/${c.id}`} className="block w-full">{c.nome}</Link>
-                </TableCell>
+              <TableRow
+                key={c.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => router.push(`/colaboradores/${c.id}`)}
+              >
+                <TableCell className="font-medium">{c.nome}</TableCell>
                 <TableCell className="text-muted-foreground">{c.email}</TableCell>
                 <TableCell>{c.setor || '—'}</TableCell>
                 <TableCell>{c.cargo || '—'}</TableCell>
@@ -74,9 +77,7 @@ export function ColaboradoresTableClient({ colaboradores }: { colaboradores: Pro
                   <Badge variant={c.ativo ? 'success' : 'outline'}>{c.ativo ? 'Ativo' : 'Inativo'}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/colaboradores/${c.id}`}>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ))}

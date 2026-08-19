@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -12,7 +13,7 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Trash2, Loader2, FileText, ChevronRight } from 'lucide-react'
+import { Trash2, Loader2, FileText, ChevronRight, Search } from 'lucide-react'
 import { EnviarAssinatura } from '@/components/EnviarAssinatura'
 import { formatDateBR } from '@/lib/utils'
 import type { FichaEntrega } from '@/types/database'
@@ -25,6 +26,17 @@ export function EntregasTableClient({ fichas, podeExcluir = false }: { fichas: F
   const [palavra, setPalavra] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [busca, setBusca] = useState('')
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase()
+    if (!q) return fichas
+    return fichas.filter((f) => {
+      const tipo = f.tipo === 'retirada' ? 'devolução devolucao' : 'entrega'
+      const epis = (f.itens ?? []).map((i) => i.epi?.nome ?? '').join(' ')
+      return [f.colaborador?.nome, tipo, epis].filter(Boolean).some((v) => (v as string).toLowerCase().includes(q))
+    })
+  }, [fichas, busca])
 
   function openDelete(ficha: FichaEntrega) {
     setTarget(ficha)
@@ -54,7 +66,14 @@ export function EntregasTableClient({ fichas, podeExcluir = false }: { fichas: F
   }
 
   return (
-    <>
+    <div className="space-y-3">
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por colaborador, EPI ou tipo..." className="pl-9" />
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -68,7 +87,13 @@ export function EntregasTableClient({ fichas, podeExcluir = false }: { fichas: F
           </TableRow>
         </TableHeader>
         <TableBody>
-          {fichas.map((ficha) => (
+          {filtradas.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                Nenhuma ficha encontrada.
+              </TableCell>
+            </TableRow>
+          ) : filtradas.map((ficha) => (
             <TableRow key={ficha.id}>
               <TableCell className="font-medium">{ficha.colaborador?.nome}</TableCell>
               <TableCell>
@@ -126,6 +151,8 @@ export function EntregasTableClient({ fichas, podeExcluir = false }: { fichas: F
           ))}
         </TableBody>
       </Table>
+        </CardContent>
+      </Card>
 
       {/* Dialog com confirmação por palavra */}
       <Dialog open={!!target} onOpenChange={(o) => { if (!o) closeDelete() }}>
@@ -176,6 +203,6 @@ export function EntregasTableClient({ fichas, podeExcluir = false }: { fichas: F
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }

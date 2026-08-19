@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase-server'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Plus } from 'lucide-react'
 import { EntregasTableClient } from './EntregasTableClient'
 import { getPerfilAtual } from '@/lib/auth'
@@ -37,11 +36,7 @@ export default async function EntregasPage() {
         }
       />
       <div className="p-6">
-        <Card>
-          <CardContent className="p-0">
-            <EntregasTableClient fichas={(fichas as FichaEntrega[]) ?? []} podeExcluir={podeExcluir} />
-          </CardContent>
-        </Card>
+        <EntregasTableClient fichas={(fichas as FichaEntrega[]) ?? []} podeExcluir={podeExcluir} />
       </div>
     </div>
   )
