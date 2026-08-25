@@ -83,7 +83,7 @@ export default async function ColaboradorPage({ params }: { params: Promise<{ id
       <div className="p-6 space-y-6">
 
         {/* Dados pessoais — com edição e exclusão inline */}
-        <ColaboradorActions colaborador={colaborador} podeExcluir={podeExcluir} />
+        <ColaboradorActions colaborador={colaborador} podeExcluir={podeExcluir} podeEditarPerfil={perfil === 'rh'} />
 
         {/* EPIs ativos */}
         <Card>

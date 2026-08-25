@@ -20,6 +20,7 @@ import type { Profile } from '@/types/database'
 interface Props {
   colaborador: Profile
   podeExcluir?: boolean
+  podeEditarPerfil?: boolean
 }
 
 const roleLabel: Record<string, string> = {
@@ -28,7 +29,7 @@ const roleLabel: Record<string, string> = {
   colaborador: 'Colaborador',
 }
 
-export function ColaboradorActions({ colaborador, podeExcluir = false }: Props) {
+export function ColaboradorActions({ colaborador, podeExcluir = false, podeEditarPerfil = false }: Props) {
   const router = useRouter()
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -223,14 +224,21 @@ export function ColaboradorActions({ colaborador, podeExcluir = false }: Props) 
                 </div>
                 <div className="space-y-2">
                   <Label>Perfil</Label>
-                  <Select value={form.role} onValueChange={(v) => update('role', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="colaborador">Colaborador</SelectItem>
-                      <SelectItem value="gestor">Gestor</SelectItem>
-                      <SelectItem value="rh">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {podeEditarPerfil ? (
+                    <Select value={form.role} onValueChange={(v) => update('role', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="colaborador">Colaborador</SelectItem>
+                        <SelectItem value="gestor">Gestor</SelectItem>
+                        <SelectItem value="rh">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex h-10 items-center gap-2">
+                      <Badge variant="secondary">{roleLabel[colaborador.role] || colaborador.role}</Badge>
+                      <span className="text-xs text-muted-foreground">Somente Admin pode alterar</span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Status</Label>
