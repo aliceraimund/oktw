@@ -35,7 +35,7 @@ export default async function EntregasPage() {
           </Button>
         }
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <EntregasTableClient fichas={(fichas as FichaEntrega[]) ?? []} podeExcluir={podeExcluir} />
       </div>
     </div>

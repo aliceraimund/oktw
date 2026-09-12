@@ -31,7 +31,7 @@ export default async function EpisPage() {
           </Button>
         }
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <EpisTableClient epis={(epis as Epi[]) ?? []} podeExcluir={podeExcluir} />
       </div>
     </div>
