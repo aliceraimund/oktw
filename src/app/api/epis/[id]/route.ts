@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase-server'
+import { exigirPerfil } from '@/lib/auth'
 
 // PATCH — atualiza dados do EPI
 export async function PATCH(
@@ -22,11 +23,14 @@ export async function PATCH(
   return NextResponse.json({ ok: true })
 }
 
-// DELETE — exclui EPI (apenas se não tiver itens de entrega vinculados)
+// DELETE — exclui EPI (somente Admin; apenas se não tiver itens vinculados)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await exigirPerfil(['rh'])
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const { id } = await params
   const supabase = createAdminClient()
 

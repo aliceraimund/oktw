@@ -42,7 +42,7 @@ export function mensagemAssinatura(ficha: FichaEntrega): string {
     `Olá, ${nome}! ` +
     `Você tem uma ficha de EPI aguardando sua assinatura. ` +
     `Confirme ${tipo} dos equipamentos assinando eletronicamente neste link:\n${link}\n\n` +
-    `⚠️ Importante: ao abrir o link, *permita o acesso à sua localização* quando o navegador pedir — isso reforça a validade jurídica da sua assinatura.\n\n` +
+    `*Importante:* ao abrir o link, *permita o acesso à sua localização* quando o navegador pedir — isso reforça a validade jurídica da sua assinatura.\n\n` +
     `Este link é pessoal e único. Não compartilhe.`
   )
 }

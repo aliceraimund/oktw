@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-server'
+import { exigirPerfil } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
-  // Verificar que o solicitante é RH
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'rh') {
-    return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 })
-  }
+  // Admin e Gestor podem criar colaboradores/acessos
+  const auth = await exigirPerfil(['rh', 'gestor'])
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const { nome, email, senha, role, setor, cargo, cpf, ctps, telefone } = await req.json()
 

@@ -1,7 +1,11 @@
-import { AuthShell } from '@/components/layout/AuthShell'
+'use client'
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthShell>{children}</AuthShell>
-  )
+import { usePathname } from 'next/navigation'
+import { AppShell } from '@/components/layout/AppShell'
+
+export default function EntregasLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  // A tela pública de assinatura é mobile-first e NÃO usa a casca administrativa.
+  if (/^\/entregas\/[^/]+\/assinar/.test(pathname)) return <>{children}</>
+  return <AppShell>{children}</AppShell>
 }

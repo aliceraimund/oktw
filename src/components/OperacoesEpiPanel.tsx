@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -138,51 +139,43 @@ export function OperacoesEpiPanel({ colaboradorId, fichas, operacoes }: Props) {
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label>Tipo de operação *</Label>
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={form.tipo}
-                onChange={(e) => update('tipo', e.target.value)}
-                required
-              >
-                <option value="devolucao">Devolução</option>
-                <option value="substituicao">Substituição</option>
-                <option value="higienizacao">Higienização</option>
-              </select>
+              <Select value={form.tipo} onValueChange={(v) => update('tipo', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="devolucao">Devolução</SelectItem>
+                  <SelectItem value="substituicao">Substituição</SelectItem>
+                  <SelectItem value="higienizacao">Higienização</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label>Ficha de entrega *</Label>
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={form.ficha_id}
-                onChange={(e) => update('ficha_id', e.target.value)}
-                required
-              >
-                <option value="">Selecione uma ficha...</option>
-                {fichasAssinadas.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {formatDateBR(f.data_entrega)} — {f.itens?.map((i) => i.epi?.nome).join(', ')}
-                  </option>
-                ))}
-              </select>
+              <Select value={form.ficha_id || undefined} onValueChange={(v) => update('ficha_id', v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione uma ficha..." /></SelectTrigger>
+                <SelectContent>
+                  {fichasAssinadas.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {formatDateBR(f.data_entrega)} — {f.itens?.map((i) => i.epi?.nome).join(', ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {form.ficha_id && (
               <div className="space-y-2">
                 <Label>EPI *</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={form.epi_id}
-                  onChange={(e) => update('epi_id', e.target.value)}
-                  required
-                >
-                  <option value="">Selecione o EPI...</option>
-                  {itensDisponivel.map((item) => (
-                    <option key={item.id} value={item.epi_id}>
-                      {item.epi?.nome} ({formatCA(item.epi?.ca)})
-                    </option>
-                  ))}
-                </select>
+                <Select value={form.epi_id || undefined} onValueChange={(v) => update('epi_id', v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o EPI..." /></SelectTrigger>
+                  <SelectContent>
+                    {itensDisponivel.map((item) => (
+                      <SelectItem key={item.id} value={item.epi_id}>
+                        {item.epi?.nome} ({formatCA(item.epi?.ca)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 

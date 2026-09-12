@@ -1,8 +1,3 @@
-'use client'
-
-import { Bell } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-
 interface HeaderProps {
   title: string
   subtitle?: string
@@ -16,12 +11,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
         <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
         {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {actions}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-        </Button>
-      </div>
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </header>
   )
 }

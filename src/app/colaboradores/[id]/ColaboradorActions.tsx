@@ -12,27 +12,52 @@ import {
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SetorInput } from '@/components/SetorInput'
-import { AlertTriangle, Loader2, Pencil, Trash2, User } from 'lucide-react'
+import { AlertTriangle, Loader2, Pencil, Trash2, User, KeyRound, Check } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { formatCPF, formatTelefone, formatCTPS } from '@/lib/utils'
 import type { Profile } from '@/types/database'
 
 interface Props {
   colaborador: Profile
+  podeExcluir?: boolean
+  podeEditarPerfil?: boolean
 }
 
 const roleLabel: Record<string, string> = {
-  rh: 'RH / Segurança',
+  rh: 'Admin',
   gestor: 'Gestor',
   colaborador: 'Colaborador',
 }
 
-export function ColaboradorActions({ colaborador }: Props) {
+export function ColaboradorActions({ colaborador, podeExcluir = false, podeEditarPerfil = false }: Props) {
   const router = useRouter()
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Redefinição de senha
+  const [showSenha, setShowSenha] = useState(false)
+  const [novaSenha, setNovaSenha] = useState('')
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
+  const [senhaOk, setSenhaOk] = useState(false)
+  const [senhaErro, setSenhaErro] = useState<string | null>(null)
+
+  async function handleRedefinirSenha() {
+    setSalvandoSenha(true)
+    setSenhaErro(null)
+    const res = await fetch(`/api/colaboradores/${colaborador.id}/senha`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha: novaSenha }),
+    })
+    const json = await res.json()
+    if (!res.ok) { setSenhaErro(json.error || 'Erro ao redefinir senha.'); setSalvandoSenha(false); return }
+    setSalvandoSenha(false)
+    setSenhaOk(true)
+    setTimeout(() => { setShowSenha(false); setSenhaOk(false); setNovaSenha('') }, 1500)
+  }
 
   const [form, setForm] = useState({
     nome: colaborador.nome,
@@ -111,13 +136,20 @@ export function ColaboradorActions({ colaborador }: Props) {
           </CardTitle>
           <div className="flex gap-2">
             {!editMode && (
-              <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
+              <>
+                <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setSenhaErro(null); setNovaSenha(''); setShowSenha(true) }}>
+                  <KeyRound className="h-3.5 w-3.5 mr-1.5" /> Redefinir senha
+                </Button>
+              </>
+            )}
+            {podeExcluir && (
+              <Button size="sm" variant="destructive" onClick={() => setShowDelete(true)}>
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Excluir
               </Button>
             )}
-            <Button size="sm" variant="destructive" onClick={() => setShowDelete(true)}>
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Excluir
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -130,7 +162,7 @@ export function ColaboradorActions({ colaborador }: Props) {
               </div>
               <div>
                 <p className="text-muted-foreground">WhatsApp / Telefone</p>
-                <p className="font-medium">{colaborador.telefone ?? '—'}</p>
+                <p className="font-medium">{colaborador.telefone ? formatTelefone(colaborador.telefone) : '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Setor</p>
@@ -142,11 +174,11 @@ export function ColaboradorActions({ colaborador }: Props) {
               </div>
               <div>
                 <p className="text-muted-foreground">CPF</p>
-                <p className="font-medium font-mono">{colaborador.cpf ?? '—'}</p>
+                <p className="font-medium font-mono">{colaborador.cpf ? formatCPF(colaborador.cpf) : '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">CTPS</p>
-                <p className="font-medium font-mono">{colaborador.ctps ?? '—'}</p>
+                <p className="font-medium font-mono">{colaborador.ctps ? formatCTPS(colaborador.ctps) : '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Perfil</p>
@@ -177,26 +209,36 @@ export function ColaboradorActions({ colaborador }: Props) {
                 </div>
                 <div className="space-y-2">
                   <Label>CPF</Label>
-                  <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
+                  <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)}
+                    onBlur={() => update('cpf', formatCPF(form.cpf))} placeholder="Ex: 000.000.000-00" />
                 </div>
                 <div className="space-y-2">
                   <Label>WhatsApp / Telefone</Label>
-                  <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)} placeholder="Ex: (11) 99999-9999" />
+                  <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)}
+                    onBlur={() => update('telefone', formatTelefone(form.telefone))} placeholder="Ex: (11) 99999-9999" />
                 </div>
                 <div className="space-y-2">
                   <Label>CTPS (nº série / UF)</Label>
-                  <Input value={form.ctps} onChange={(e) => update('ctps', e.target.value)} placeholder="Ex: 043978-00014-CE" />
+                  <Input value={form.ctps} onChange={(e) => update('ctps', e.target.value)}
+                    onBlur={() => update('ctps', formatCTPS(form.ctps))} placeholder="Ex: 043978-00014-CE" />
                 </div>
                 <div className="space-y-2">
                   <Label>Perfil</Label>
-                  <Select value={form.role} onValueChange={(v) => update('role', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="colaborador">Colaborador</SelectItem>
-                      <SelectItem value="gestor">Gestor</SelectItem>
-                      <SelectItem value="rh">RH / Segurança</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {podeEditarPerfil ? (
+                    <Select value={form.role} onValueChange={(v) => update('role', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="colaborador">Colaborador</SelectItem>
+                        <SelectItem value="gestor">Gestor</SelectItem>
+                        <SelectItem value="rh">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex h-10 items-center gap-2">
+                      <Badge variant="secondary">{roleLabel[colaborador.role] || colaborador.role}</Badge>
+                      <span className="text-xs text-muted-foreground">Somente Admin pode alterar</span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Status</Label>
@@ -284,6 +326,51 @@ export function ColaboradorActions({ colaborador }: Props) {
                 <Button variant="destructive" onClick={handleDesativar} disabled={deleting}>
                   {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Desativar colaborador
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de redefinição de senha */}
+      <Dialog open={showSenha} onOpenChange={(o) => { if (!o) setShowSenha(false) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir senha de acesso</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para <strong>{colaborador.nome}</strong> acessar o sistema
+              (e-mail {colaborador.email}).
+            </DialogDescription>
+          </DialogHeader>
+
+          {senhaOk ? (
+            <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-3 text-sm">
+              <Check className="h-4 w-4" /> Senha redefinida com sucesso.
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2 pt-1">
+                <Label>Nova senha</Label>
+                <Input
+                  type="text"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  autoComplete="new-password"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe a nova senha ao colaborador. Ele poderá usá-la no próximo login.
+                </p>
+              </div>
+              {senhaErro && <p className="text-sm text-destructive bg-red-50 p-3 rounded-md">{senhaErro}</p>}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSenha(false)} disabled={salvandoSenha}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleRedefinirSenha} disabled={salvandoSenha || novaSenha.length < 6}>
+                  {salvandoSenha && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Salvar nova senha
                 </Button>
               </DialogFooter>
             </>

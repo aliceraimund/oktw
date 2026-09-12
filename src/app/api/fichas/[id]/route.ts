@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase-server'
+import { exigirPerfil } from '@/lib/auth'
 
-// DELETE — exclui ficha e todos os dados relacionados
+// DELETE — exclui ficha e todos os dados relacionados (somente Admin)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await exigirPerfil(['rh'])
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const { id } = await params
   const supabase = createAdminClient()
 

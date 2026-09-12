@@ -14,8 +14,14 @@ export default async function VencimentosPage() {
     .select('*, epi:epis(*), ficha:fichas_entrega(*, colaborador:profiles!fichas_entrega_colaborador_id_fkey(*))')
     .order('data_vencimento', { ascending: true })
 
-  // Só itens de fichas assinadas
-  const itens = ((data as ItemEntrega[]) || []).filter((i) => i.ficha?.assinado)
+  // Itens em uso: de fichas de ENTREGA assinadas, excluindo os já devolvidos.
+  const todos = (data as ItemEntrega[]) || []
+  const devolvidos = new Set(
+    todos.filter((i) => i.ficha?.tipo === 'retirada').map((i) => i.item_origem_id).filter(Boolean)
+  )
+  const itens = todos.filter(
+    (i) => i.ficha?.assinado && i.ficha?.tipo === 'entrega' && !devolvidos.has(i.id)
+  )
 
   const vencidos = itens.filter((i) => diasParaVencer(i.data_vencimento) < 0).length
   const atencao  = itens.filter((i) => { const d = diasParaVencer(i.data_vencimento); return d >= 0 && d <= 30 }).length

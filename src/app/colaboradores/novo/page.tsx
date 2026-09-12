@@ -10,13 +10,15 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SetorInput } from '@/components/SetorInput'
-import { Loader2 } from 'lucide-react'
+import { formatCPF, formatTelefone, formatCTPS } from '@/lib/utils'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function NovoColaboradorPage() {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
   const [form, setForm] = useState({
     nome: '',
     email: '',
@@ -77,7 +79,24 @@ export default function NovoColaboradorPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Senha inicial *</Label>
-                  <Input type="password" value={form.senha} onChange={(e) => update('senha', e.target.value)} required minLength={6} />
+                  <div className="relative">
+                    <Input
+                      type={mostrarSenha ? 'text' : 'password'}
+                      value={form.senha}
+                      onChange={(e) => update('senha', e.target.value)}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarSenha((v) => !v)}
+                      aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Perfil *</Label>
@@ -88,7 +107,7 @@ export default function NovoColaboradorPage() {
                     <SelectContent>
                       <SelectItem value="colaborador">Colaborador</SelectItem>
                       <SelectItem value="gestor">Gestor</SelectItem>
-                      <SelectItem value="rh">RH / Segurança</SelectItem>
+                      <SelectItem value="rh">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -102,15 +121,18 @@ export default function NovoColaboradorPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>CPF</Label>
-                  <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)} placeholder="Ex: 000.000.000-00" />
+                  <Input value={form.cpf} onChange={(e) => update('cpf', e.target.value)}
+                    onBlur={() => update('cpf', formatCPF(form.cpf))} placeholder="Ex: 000.000.000-00" />
                 </div>
                 <div className="space-y-2">
                   <Label>WhatsApp / Telefone</Label>
-                  <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)} placeholder="Ex: (11) 99999-9999" />
+                  <Input value={form.telefone} onChange={(e) => update('telefone', e.target.value)}
+                    onBlur={() => update('telefone', formatTelefone(form.telefone))} placeholder="Ex: (11) 99999-9999" />
                 </div>
                 <div className="space-y-2">
                   <Label>CTPS (nº série / UF)</Label>
-                  <Input value={form.ctps} onChange={(e) => update('ctps', e.target.value)} placeholder="Ex: 043978-00014-CE" />
+                  <Input value={form.ctps} onChange={(e) => update('ctps', e.target.value)}
+                    onBlur={() => update('ctps', formatCTPS(form.ctps))} placeholder="Ex: 043978-00014-CE" />
                 </div>
               </div>
 

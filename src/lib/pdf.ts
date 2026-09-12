@@ -1,6 +1,8 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import type { FichaEntrega, Profile } from '@/types/database'
 import { formatDateBR, formatDateTimeBR, formatCA } from './utils'
+import { aplicarPlaceholders } from './pdf-config'
+import { carregarConfigPdf } from './pdf-config-server'
 
 async function sha256(data: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -12,19 +14,13 @@ async function sha256(data: string): Promise<string> {
 }
 
 
-// ─── Ficha com múltiplos EPIs + Termo de Responsabilidade ────────────────────
+const MOTIVO_LABEL: Record<string, string> = {
+  substituicao: 'Substituição',
+  desligamento: 'Desligamento',
+  higienizacao: 'Higienização',
+}
 
-const TERMO_PARAGRAFOS = [
-  'Recebi da empresa OKTW COMERCIO E SERVICOS LTDA, CNPJ: 51.747.453/0001-17, a título de empréstimo, para meu uso exclusivo e obrigatório nas dependências da empresa, conforme determinado na NR-6 item 6.5.1, os equipamentos discriminados a seguir, comprometendo-me a mantê-los em perfeito estado de uso e conservação, ficando ciente de que:',
-  '1- Recebi treinamento quanto à necessidade na utilização dos referidos EPI\'s, a maneira correta de usá-los, guardá-los e higienizá-los, bem como da minha responsabilidade quanto a seu uso, conforme determinado na NR-6 item 6.5.1;',
-  '2- Se o equipamento foi danificado ou inutilizado por emprego inadequado, mau uso, negligência ou extravio, a empresa me fornecerá novo equipamento e cobrará o valor de um equipamento da mesma marca ou equivalente (Art. 462 em seu parágrafo 1º da C.L.T.);',
-  '3- Fico proibido de dar ou emprestar o equipamento que estiver sob a minha responsabilidade, só podendo fazê-lo se receber ordem por escrito de pessoas autorizadas para tal fim;',
-  '4- Em caso de dano, inutilização ou extravio do equipamento, deverei comunicar imediatamente ao setor competente;',
-  '5- Terminados os serviços, ou no caso de rescisão do contrato de trabalho, devolverei o equipamento completo e em perfeito estado de conservação, considerando-se o tempo de uso do mesmo, ao setor competente;',
-  '6- Estando os equipamentos em minha posse, estarei sujeito a inspeções sem prévio aviso.',
-  '7- Fico ciente de que pela não utilização do equipamento de proteção individual em serviço, estarei sujeito às sanções disciplinares cabíveis, que irão desde a simples advertência até a dispensa por justa causa, nos termos do Art. 482 letra "h" da C.L.T., conforme NR-6 item 6.5.1.',
-  '8- Declaro expressamente que consinto com a assinatura eletrônica do presente termo, nos termos da Lei nº 14.063/2020 e conforme NR-6 item 6.5.1, tendo plena ciência de que esta assinatura possui validade legal equivalente à assinatura manuscrita.',
-]
+// ─── Ficha com múltiplos EPIs + Termo de Responsabilidade ────────────────────
 
 function wrapText(text: string, maxChars: number): string[] {
   const words = text.split(' ')
@@ -54,6 +50,7 @@ export async function gerarFichaEntregaPDFv2(
   const colaborador = ficha.colaborador!
   const itens       = ficha.itens ?? []
   const hash        = await sha256(assinaturaBase64)
+  const config      = await carregarConfigPdf()
 
   const W = 595, H = 842, margin = 50 // A4
   const width = W, height = H
@@ -100,15 +97,15 @@ export async function gerarFichaEntregaPDFv2(
   page.drawText('DADOS DO COLABORADOR', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 16
 
-  for (const [label, valor] of [
-    ['Nome', colaborador.nome],
-    ['CPF', colaborador.cpf ?? '—'],
-    ['Cargo', colaborador.cargo ?? '—'],
-    ['Setor', colaborador.setor ?? '—'],
-    ['CTPS', colaborador.ctps ?? '—'],
-    ['Tipo', ehDev ? 'Devolução de EPI' : 'Entrega de EPI'],
-    [`Data da ${ehDev ? 'devolução' : 'entrega'}`, formatDateBR(ficha.data_entrega)],
-  ] as [string, string][]) {
+  const camposColaborador: [string, string][] = [['Nome', colaborador.nome]]
+  if (config.campos.cpf)   camposColaborador.push(['CPF', colaborador.cpf ?? '—'])
+  if (config.campos.cargo) camposColaborador.push(['Cargo', colaborador.cargo ?? '—'])
+  if (config.campos.setor) camposColaborador.push(['Setor', colaborador.setor ?? '—'])
+  if (config.campos.ctps)  camposColaborador.push(['CTPS', colaborador.ctps ?? '—'])
+  camposColaborador.push(['Tipo', ehDev ? 'Devolução de EPI' : 'Entrega de EPI'])
+  if (config.campos.data)  camposColaborador.push([`Data da ${ehDev ? 'devolução' : 'entrega'}`, formatDateBR(ficha.data_entrega)])
+
+  for (const [label, valor] of camposColaborador) {
     page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold })
     page.drawText(valor, { x: margin + 110, y, size: 8, font: fontRegular })
     y -= 14
@@ -153,12 +150,13 @@ export async function gerarFichaEntregaPDFv2(
 
   const MIN_ASSINATURA = 150 // altura mínima livre para o bloco de assinatura
 
-  // Devolução usa uma declaração curta; entrega usa o termo completo.
+  // Devolução usa uma declaração curta; entrega usa o termo configurável.
   const DEVOLUCAO_PARAGRAFOS = [
-    'Declaro, para os devidos fins, que devolvi à empresa OKTW COMERCIO E SERVICOS LTDA, CNPJ: 51.747.453/0001-17, os Equipamentos de Proteção Individual (EPI) discriminados acima.',
+    'Declaro, para os devidos fins, que devolvi à empresa {EMPRESA}, CNPJ: {CNPJ}, os Equipamentos de Proteção Individual (EPI) discriminados acima.',
     'Declaro ainda que consinto expressamente com a assinatura eletrônica da presente confirmação de devolução, nos termos da Lei nº 14.063/2020 e conforme a NR-6 item 6.5.1, tendo plena ciência de que esta assinatura possui validade legal equivalente à assinatura manuscrita.',
   ]
-  const paragrafos = ehDev ? DEVOLUCAO_PARAGRAFOS : TERMO_PARAGRAFOS
+  const paragrafos = (ehDev ? DEVOLUCAO_PARAGRAFOS : config.termo_paragrafos)
+    .map((p) => aplicarPlaceholders(p, config))
 
   // O texto pagina quando chega perto do rodapé — nenhuma cláusula é truncada
   for (const paragrafo of paragrafos) {
@@ -193,7 +191,7 @@ export async function gerarFichaEntregaPDFv2(
   y -= 13
 
   page.drawText(
-    `Assinado em: ${ficha.assinado_em ? formatDateTimeBR(ficha.assinado_em) : new Date().toLocaleString('pt-BR')}`,
+    `Assinado em: ${formatDateTimeBR(ficha.assinado_em ?? new Date().toISOString())}`,
     { x: margin, y, size: 8, font: fontRegular }
   )
   y -= 12
@@ -246,7 +244,7 @@ export async function gerarRelatorioColaboradorPDF(
     p.drawText('Sistema OKTW EPI Manager — Conforme NR-6 item 6.5.1 / Lei 14.063/2020', {
       x: margin, y: 40, size: 6.5, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
     })
-    p.drawText(`Gerado em ${new Date().toLocaleString('pt-BR')}`, {
+    p.drawText(`Gerado em ${formatDateTimeBR(new Date().toISOString())}`, {
       x: margin, y: 28, size: 6, font: fontRegular, color: rgb(0.6, 0.6, 0.6),
     })
   }
@@ -255,7 +253,7 @@ export async function gerarRelatorioColaboradorPDF(
   let y = H - 110
 
   // Título
-  page.drawText('HISTÓRICO DE ENTREGAS DE EPI', {
+  page.drawText('HISTÓRICO DE FICHAS DE EPI', {
     x: margin, y, size: 11, font: fontBold, color: rgb(0.06, 0.09, 0.16),
   })
   y -= 6
@@ -310,14 +308,14 @@ export async function gerarRelatorioColaboradorPDF(
   page.drawLine({ start: { x: margin, y }, end: { x: W - margin, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
   y -= 16
 
-  page.drawText('FICHAS DE ENTREGA', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
+  page.drawText('FICHAS', { x: margin, y, size: 8, font: fontBold, color: rgb(0.4, 0.4, 0.4) })
   y -= 16
 
   const cols = { nome: margin + 10, ca: margin + 215, qtd: margin + 310, venc: margin + 368 }
 
   for (const ficha of fichas) {
     const nItems = ficha.itens?.length ?? 0
-    const needed = 20 + (ficha.assinado_em ? 12 : 0) + 14 + nItems * 14 + 16
+    const needed = 20 + (ficha.assinado_em ? 12 : 0) + (ficha.tipo === 'retirada' ? 12 : 0) + 14 + nItems * 14 + 16
 
     if (y - needed < 70) {
       drawFooter(page)
@@ -326,7 +324,7 @@ export async function gerarRelatorioColaboradorPDF(
     }
 
     // Barra de cabeçalho da ficha
-    const tipoLabel = ficha.tipo === 'retirada' ? 'RETIRADA' : 'ENTREGA'
+    const tipoLabel = ficha.tipo === 'retirada' ? 'DEVOLUÇÃO' : 'ENTREGA'
     page.drawRectangle({
       x: margin - 4, y: y - 4, width: W - margin * 2 + 8, height: 18,
       color: rgb(0.93, 0.95, 0.98),
@@ -343,6 +341,17 @@ export async function gerarRelatorioColaboradorPDF(
     if (ficha.assinado_em) {
       page.drawText(`Assinado em: ${formatDateTimeBR(ficha.assinado_em)}`, {
         x: margin + 10, y, size: 7, font: fontRegular, color: rgb(0.5, 0.5, 0.5),
+      })
+      y -= 12
+    }
+
+    // Motivo/observação da devolução (movimentação do ciclo de vida)
+    if (ficha.tipo === 'retirada' && (ficha.motivo || ficha.observacao)) {
+      const partes: string[] = []
+      if (ficha.motivo) partes.push(`Motivo: ${MOTIVO_LABEL[ficha.motivo] ?? ficha.motivo}`)
+      if (ficha.observacao) partes.push(`Obs.: ${ficha.observacao}`)
+      page.drawText(partes.join('   ·   ').substring(0, 115), {
+        x: margin + 10, y, size: 7, font: fontRegular, color: rgb(0.45, 0.45, 0.45),
       })
       y -= 12
     }
@@ -371,5 +380,21 @@ export async function gerarRelatorioColaboradorPDF(
   }
 
   drawFooter(page)
+
+  // Anexa o PDF assinado de cada ficha ao final do relatório
+  for (const ficha of fichas) {
+    if (!ficha.pdf_url) continue
+    try {
+      const res = await fetch(ficha.pdf_url)
+      if (!res.ok) continue
+      const bytes = new Uint8Array(await res.arrayBuffer())
+      const anexo = await PDFDocument.load(bytes)
+      const paginas = await doc.copyPages(anexo, anexo.getPageIndices())
+      paginas.forEach((p) => doc.addPage(p))
+    } catch {
+      /* ignora anexo com erro de download/leitura */
+    }
+  }
+
   return doc.save()
 }

@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { HardHat, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
+import { Logo } from '@/components/layout/Logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,14 +39,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="bg-slate-900 rounded-xl p-3">
-            <HardHat className="h-7 w-7 text-amber-400" />
-          </div>
-          <div>
-            <p className="font-bold text-2xl text-slate-900">OKTW</p>
-            <p className="text-slate-500 text-sm">Gestão de EPIs</p>
-          </div>
+        <div className="flex flex-col items-center justify-center mb-8">
+          <Logo className="h-24 w-auto" />
+          <p className="text-slate-500 text-sm mt-1">Gestão de EPIs</p>
         </div>
 
         <Card>
